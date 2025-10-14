@@ -3,43 +3,32 @@
 
 window.APP_CONFIG = {
     // ============================================================================
-    // DEPLOYMENT CONFIGURATION - Set via GitHub Secrets
+    // BACKEND PROXY CONFIGURATION
     // ============================================================================
-    // These should be configured as GitHub Secrets for production deployment
-    // Users can override any of these in Advanced Settings
+    // The app uses a Cloudflare Worker to proxy API requests securely
+    // Your API key is stored server-side and never exposed to clients
     
-    // API Base URL - Your LLM API endpoint
-    // GitHub Secret: BASE_URL (optional, uses default if not set)
-    defaultBaseURL: 'https://integrate.api.nvidia.com/v1',
+    // Backend API Proxy URL
+    // This should point to your Cloudflare Worker endpoint
+    defaultBaseURL: 'https://systemprompt.me/api',
     
-    // AI Model - The model to use for analysis
-    // GitHub Secret: MODEL_NAME (optional, uses default if not set)
+    // Model is configured in the Worker (wrangler.toml)
+    // Users can still override in Advanced Settings if using their own key
     defaultModel: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
     
-    // Admin API Key - For seamless user experience
-    // GitHub Secret: ADMIN_API_KEY (required for auto-start feature)
-    // Rate limiting (10 calls/min) protects your quota
-    defaultApiKey: '', // Deprecated - use adminApiKey
-    adminApiKey: '', // Set via GitHub Secret
+    // No API key needed for default configuration
+    // The Worker handles authentication server-side
+    defaultApiKey: '',
+    adminApiKey: '', // Not used with backend proxy
     
     // ============================================================================
-    // GITHUB SECRETS SETUP (Recommended for Production)
+    // FOR USERS WITH THEIR OWN API KEYS
     // ============================================================================
-    // Go to: Repository → Settings → Secrets and variables → Actions
-    // Add these secrets:
-    //
-    // 1. ADMIN_API_KEY (Required)
-    //    Your API key for the LLM service
-    //
-    // 2. BASE_URL (Optional)
-    //    Your API endpoint URL
-    //    Only set if using custom endpoint
-    //
-    // 3. MODEL_NAME (Optional)
-    //    The model identifier
-    //    Only set if using different model
-    //
-    // GitHub Actions will automatically inject these on deployment
+    // Advanced users can still bypass the proxy by:
+    // 1. Opening Advanced Settings
+    // 2. Entering their own Base URL (e.g., https://integrate.api.nvidia.com/v1)
+    // 3. Entering their own API key
+    // 4. This gives them unlimited usage with their own quota
     
     // CORS proxy for localhost development
     corsProxyURL: 'https://corsproxy.io/?',

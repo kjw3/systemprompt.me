@@ -1,0 +1,28 @@
+# Cloudflare Worker Configuration for System Prompt Proxy
+
+name = "systemprompt-proxy"
+main = "systemprompt-proxy.js"
+compatibility_date = "2024-01-01"
+
+# Route configuration
+# Update this to match your domain
+routes = [
+  { pattern = "systemprompt.me/api/*", zone_name = "kjw3.llc" }
+]
+
+# Environment variables (non-sensitive)
+[env.production]
+vars = { 
+  API_BASE_URL = "https://integrate.api.nvidia.com/v1",
+  API_MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+}
+
+# Secrets (sensitive - set via CLI)
+# Run: wrangler secret put API_KEY
+# Then paste your actual API key
+
+# Usage limits (Cloudflare free tier)
+# - 100,000 requests per day
+# - 10ms CPU time per request
+# - More than enough for your use case
+

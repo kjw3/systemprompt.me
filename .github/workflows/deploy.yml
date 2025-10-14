@@ -41,10 +41,11 @@ jobs:
           // DO NOT EDIT - This file is overwritten on each deployment
           
           window.APP_CONFIG = {
-              defaultBaseURL: '${BASE_URL}',
-              defaultModel: '${MODEL_NAME}',
+              // Backend proxy URL - API key is stored securely in Cloudflare Worker
+              defaultBaseURL: 'https://systemprompt.me/api',
+              defaultModel: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
               defaultApiKey: '',
-              adminApiKey: '${ADMIN_API_KEY}',
+              adminApiKey: '', // Not used - Worker handles authentication
               corsProxyURL: 'https://corsproxy.io/?',
               autoDetectLocalhost: false
           };
@@ -53,9 +54,8 @@ jobs:
           # Verify config was created
           if [ -f config.js ]; then
             echo "✅ config.js created successfully"
-            echo "Base URL: ${BASE_URL}"
-            echo "Model: ${MODEL_NAME}"
-            echo "API Key configured: $([ -n '${ADMIN_API_KEY}' ] && echo 'Yes' || echo 'No')"
+            echo "Backend URL: https://systemprompt.me/api"
+            echo "API key: Stored securely in Cloudflare Worker"
           else
             echo "❌ Failed to create config.js"
             exit 1
