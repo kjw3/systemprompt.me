@@ -1537,12 +1537,23 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 }
             });
             
-            // Add closing note if found
+            // Add closing note if found - as a regular card with a title
             if (closingNote) {
-                const closingHtml = marked.parse(closingNote);
+                // Check if closing note starts with a label like "Closing Note:" or "Final Note:"
+                const noteLabelMatch = closingNote.match(/^((?:Closing|Final)\s+Note)[:\s]+(.+)/is);
+                let noteTitle = '';
+                let noteContent = closingNote;
+                
+                if (noteLabelMatch) {
+                    noteTitle = noteLabelMatch[1];
+                    noteContent = noteLabelMatch[2];
+                }
+                
+                const closingHtml = marked.parse(noteContent);
                 html += `
-                    <div class="result-card bg-indigo-50 rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-600">
-                        <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed italic">
+                    <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                        ${noteTitle ? `<h2 class="text-2xl font-bold text-gray-800 mb-4">${noteTitle}</h2>` : ''}
+                        <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                             ${closingHtml}
                         </div>
                     </div>
