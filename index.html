@@ -1402,15 +1402,40 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             
             console.log('Generating PDF with', sections.length, 'sections');
             
+            // Show loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                color: white;
+                font-size: 18px;
+            `;
+            loadingOverlay.innerHTML = '<div>Generating PDF...</div>';
+            document.body.appendChild(loadingOverlay);
+            
             // Create a temporary container for PDF generation with inline styles
+            // Make it VISIBLE but overlaid by the loading screen
             const pdfContainer = document.createElement('div');
             pdfContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
                 width: 800px;
                 padding: 40px;
                 background-color: white;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 color: #333;
                 line-height: 1.6;
+                z-index: 9999;
+                overflow: hidden;
             `;
             
             // Build the PDF content with inline styles directly from parsed data
@@ -1432,12 +1457,10 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             });
             
             pdfContainer.innerHTML = htmlContent;
-            
-            // Add to document temporarily (must be visible for html2canvas)
-            pdfContainer.style.position = 'absolute';
-            pdfContainer.style.left = '-9999px';
-            pdfContainer.style.top = '0';
             document.body.appendChild(pdfContainer);
+            
+            // Wait a tiny bit for rendering
+            await new Promise(resolve => setTimeout(resolve, 100));
             
             // Configure PDF options
             const opt = {
@@ -1448,7 +1471,9 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                     scale: 2,
                     useCORS: true,
                     letterRendering: true,
-                    logging: true
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    windowWidth: 800
                 },
                 jsPDF: { 
                     unit: 'in', 
@@ -1472,6 +1497,9 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 // Clean up
                 if (pdfContainer.parentNode) {
                     document.body.removeChild(pdfContainer);
+                }
+                if (loadingOverlay.parentNode) {
+                    document.body.removeChild(loadingOverlay);
                 }
             }
         }
