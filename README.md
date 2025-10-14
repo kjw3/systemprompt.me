@@ -336,3 +336,4 @@ This project aims to:
 ---
 
 *Built with privacy, powered by AI, designed for self-discovery.*
+
