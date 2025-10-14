@@ -1263,15 +1263,21 @@ Do you understand the risks and want to continue?`;
                 let thinkingContent = '';
                 
                 const reader = response.body.getReader();
-                const decoder = new TextDecoder();
+                const decoder = new TextDecoder('utf-8');
                 let analysis = '';
+                let buffer = ''; // Buffer for incomplete lines
                 
                 while (true) {
                     const {done, value} = await reader.read();
                     if (done) break;
                     
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    // CRITICAL: Use { stream: true } to handle multi-byte UTF-8 characters correctly
+                    const chunk = decoder.decode(value, { stream: true });
+                    buffer += chunk;
+                    const lines = buffer.split('\n');
+                    
+                    // Keep the last incomplete line in the buffer
+                    buffer = lines.pop() || '';
                     
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
@@ -1331,6 +1337,25 @@ Do you understand the risks and want to continue?`;
                             } catch (e) {
                                 // Ignore parse errors for incomplete chunks
                             }
+                        }
+                    }
+                }
+                
+                // Flush any remaining bytes in the decoder
+                decoder.decode();
+                
+                // Process any remaining buffered line
+                if (buffer && buffer.startsWith('data: ')) {
+                    const data = buffer.slice(6);
+                    if (data !== '[DONE]') {
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices?.[0]?.delta?.content;
+                            if (content) {
+                                analysis += content;
+                            }
+                        } catch (e) {
+                            // Ignore parse errors
                         }
                     }
                 }
