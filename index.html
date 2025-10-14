@@ -223,7 +223,7 @@
 
             <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
                 <button onclick="downloadResults()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
-                    📥 Download Results
+                    📄 Download as PDF
                 </button>
                 <button onclick="startOver()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition">
                     🔄 Start Over
@@ -1264,7 +1264,7 @@ Below are their responses to a series of introspective questions:
 Based on these responses, please provide a comprehensive analysis structured as follows:
 
 ## YOUR SYSTEM PROMPT
-Synthesize their responses into a concise "system prompt" - a 2-3 sentence summary of the core operating principles, beliefs, and assumptions that drive their behavior and decisions.
+Write this in the style of an AI system prompt, starting with "You are...". Synthesize their responses into 2-3 sentences that describe the core operating principles, beliefs, and assumptions that drive their behavior and decisions. Format it as if programming their mental operating system.
 
 ## IDENTIFIED BLOCKERS
 List 3-5 specific mental barriers or self-imposed limitations that are holding them back. Be specific and reference their actual responses.
@@ -1393,25 +1393,86 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             const results = JSON.parse(saved);
             const date = new Date(results.timestamp).toLocaleDateString();
             
-            let text = `SYSTEM PROMPT ANALYSIS\nGenerated: ${date}\n\n`;
-            text += '=' .repeat(60) + '\n\n';
+            // Create a printable HTML version
+            const printWindow = window.open('', '_blank');
+            const resultsHTML = document.getElementById('results-content').innerHTML;
             
-            questions.forEach((q, i) => {
-                text += `Q${i + 1}: ${q.text}\n`;
-                text += `A: ${results.answers[i]}\n\n`;
-            });
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>System Prompt Analysis - ${date}</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 800px;
+                            margin: 40px auto;
+                            padding: 20px;
+                        }
+                        h1 {
+                            color: #6366f1;
+                            font-size: 32px;
+                            margin-bottom: 10px;
+                        }
+                        h2 {
+                            color: #4338ca;
+                            font-size: 24px;
+                            margin-top: 30px;
+                            margin-bottom: 15px;
+                            border-bottom: 2px solid #e5e7eb;
+                            padding-bottom: 10px;
+                        }
+                        .result-card {
+                            background: #f9fafb;
+                            padding: 25px;
+                            margin: 20px 0;
+                            border-radius: 8px;
+                            border-left: 4px solid #6366f1;
+                        }
+                        .prose {
+                            color: #374151;
+                        }
+                        .date {
+                            color: #6b7280;
+                            font-size: 14px;
+                            margin-bottom: 30px;
+                        }
+                        p {
+                            margin: 12px 0;
+                        }
+                        li {
+                            margin: 8px 0;
+                        }
+                        @media print {
+                            body {
+                                margin: 20px;
+                            }
+                            .result-card {
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>🧠 System Prompt Analysis</h1>
+                    <div class="date">Generated: ${date}</div>
+                    ${resultsHTML}
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                            }, 250);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
             
-            text += '=' .repeat(60) + '\n\n';
-            text += 'ANALYSIS\n\n';
-            text += results.analysis;
-
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `system-prompt-analysis-${Date.now()}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
+            printWindow.document.close();
         }
 
         function startOver() {
