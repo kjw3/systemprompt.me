@@ -1159,7 +1159,7 @@ Do you understand the risks and want to continue?`;
                             }
                         ],
                         temperature: 0.7,
-                        max_tokens: 2500,
+                        max_tokens: 4000,  // Increased for full analysis
                         stream: false
                     })
                 });
@@ -1195,7 +1195,15 @@ Do you understand the risks and want to continue?`;
                     throw new Error('Invalid response format from API');
                 }
                 
-                const analysis = data.choices[0].message.content;
+                let analysis = data.choices[0].message.content;
+                
+                // Strip any <think> tags that the model might add
+                analysis = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                
+                // Check if we got a valid response
+                if (!analysis || analysis.length < 50) {
+                    throw new Error('API returned an empty or incomplete response. Please try again.');
+                }
 
                 // Save results
                 const results = {
@@ -1332,6 +1340,14 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             // Add last section
             if (currentSection) {
                 sections.push(currentSection);
+            }
+            
+            // Fallback: if no sections found, create a single section with all content
+            if (sections.length === 0 && analysis.trim()) {
+                sections.push({
+                    title: 'Your Analysis',
+                    content: analysis
+                });
             }
 
             // Format content (convert to HTML)
