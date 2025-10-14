@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Discover your internal system prompt - the underlying beliefs, biases, and mental blockers shaping your decisions.">
+    <meta property="og:title" content="System Prompt Analyzer">
+    <meta property="og:description" content="Discover your internal system prompt through guided questions and AI analysis.">
+    <meta property="og:type" content="website">
+    <title>System Prompt Analyzer | Discover Your Mental Operating System</title>
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <script src="config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+        
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-card {
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+        
+        .result-card:hover {
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Landing Section -->
+    <section id="landing" class="min-h-screen gradient-bg flex items-center justify-center px-4">
+        <div class="max-w-4xl mx-auto text-center text-white fade-in">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                What's Your System Prompt?
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 opacity-90">
+                Every AI has a system prompt that shapes its behavior. So do you.
+            </p>
+            <p class="text-lg md:text-xl mb-12 opacity-80 max-w-2xl mx-auto">
+                Through guided questions and AI analysis, discover the underlying beliefs, biases, 
+                and mental blockers that form your internal operating system.
+            </p>
+            <div class="space-y-4">
+                <button onclick="startDiscovery()" class="bg-white text-purple-700 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-opacity-90 transition shadow-lg">
+                    Start Discovery
+                </button>
+                <div class="text-sm opacity-75">
+                    <p>🔒 Your data never leaves your browser</p>
+                    <p>Powered by Advanced AI</p>
+                </div>
+                <div class="mt-4">
+                    <button onclick="showConfigModal()" class="text-white text-sm opacity-60 hover:opacity-100 transition underline">
+                        Advanced: Use Your Own API Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Questionnaire Section -->
+    <section id="questionnaire" class="hidden min-h-screen py-12 px-4">
+        <div class="flex max-w-6xl mx-auto gap-6">
+            <!-- Left Navigation Sidebar -->
+            <div id="question-nav" class="hidden lg:block w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+                    <h3 class="text-sm font-semibold text-gray-600 uppercase mb-4">Questions</h3>
+                    <nav id="question-list" class="space-y-2">
+                        <!-- Question nav items will be generated here -->
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 max-w-3xl">
+                <!-- Progress Bar -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-600">Question <span id="current-q">1</span> of <span id="total-q">10</span></span>
+                        <span class="text-sm font-medium text-purple-600" id="progress-percent">10%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="progress-bar" class="progress-bar h-2 rounded-full gradient-bg" style="width: 10%"></div>
+                    </div>
+                </div>
+
+                <!-- Question Card -->
+                <div id="question-card" class="bg-white rounded-2xl shadow-xl p-8 md:p-12 slide-up">
+                <h2 id="question-text" class="text-2xl md:text-3xl font-semibold text-gray-800 mb-6">
+                    Question will appear here
+                </h2>
+                <textarea 
+                    id="answer-input"
+                    rows="6"
+                    class="w-full border-2 border-gray-200 rounded-lg p-4 text-lg resize-none focus:border-purple-500 transition"
+                    placeholder="Take your time to reflect and answer honestly..."
+                ></textarea>
+                <div id="char-counter" class="text-sm text-gray-500 mt-2 text-right">0 / 5000 characters</div>
+                
+                <div class="mt-6 flex justify-between items-center">
+                    <button 
+                        id="prev-btn"
+                        onclick="previousQuestion()"
+                        class="text-gray-600 hover:text-gray-800 font-medium hidden"
+                    >
+                        ← Previous
+                    </button>
+                    <div class="flex-1"></div>
+                    <button 
+                        id="next-btn"
+                        onclick="nextQuestion()"
+                        class="btn-primary text-white px-8 py-3 rounded-lg font-semibold"
+                    >
+                        Next →
+                    </button>
+                </div>
+            </div>
+
+                <!-- Settings Link -->
+                <div class="mt-6 text-center">
+                    <button onclick="showConfigModal()" class="text-sm text-gray-500 hover:text-gray-700">
+                        ⚙️ Advanced Settings
+                    </button>
+                    <div id="api-status-indicator" class="text-xs text-gray-400 mt-1"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results" class="hidden min-h-screen py-12 px-4 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    Your System Prompt Analysis
+                </h1>
+                <p class="text-gray-600 text-lg">
+                    Here's what we discovered about your mental operating system
+                </p>
+            </div>
+
+            <div id="results-content" class="space-y-6">
+                <!-- Results will be populated here -->
+            </div>
+
+            <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="downloadResults()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                    📥 Download Results
+                </button>
+                <button onclick="startOver()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition">
+                    🔄 Start Over
+                </button>
+                <button onclick="clearAllData()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
+                    🗑️ Clear All Data
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Config Modal -->
+    <div id="config-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 fade-in">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Advanced API Settings</h2>
+            
+            <div id="using-default-notice" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm">
+                <p class="text-green-800 font-medium mb-1">✅ Using Default Configuration</p>
+                <p class="text-green-700">You're all set! Only change these settings if you want to use your own API setup.</p>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
+                    <input 
+                        type="text" 
+                        id="base-url"
+                        class="w-full border-2 border-gray-200 rounded-lg p-3"
+                        placeholder="https://your-api-endpoint.com/v1"
+                    />
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" onclick="setDirectAPI()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded transition">
+                            Reset to Default
+                        </button>
+                        <button type="button" onclick="setCORSProxy()" class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded transition">
+                            🔧 Use CORS Proxy (localhost)
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Leave as default unless using a custom API endpoint
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                    <input 
+                        type="text" 
+                        id="model-name"
+                        class="w-full border-2 border-gray-200 rounded-lg p-3"
+                        placeholder="your-model-name"
+                    />
+                    <button type="button" onclick="resetModel()" class="mt-2 text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded transition">
+                        Reset to Default
+                    </button>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Advanced: Change only if you know what you're doing
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                    <input 
+                        type="password" 
+                        id="api-key"
+                        class="w-full border-2 border-gray-200 rounded-lg p-3"
+                        placeholder="Leave empty to use default (recommended)"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">
+                        🔒 Leave empty to use the site's default key, or enter your own for unlimited use
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm text-blue-800">
+                <p class="font-medium mb-1">🔒 Privacy First</p>
+                <p>All processing happens in your browser. Your responses and custom API key (if provided) are stored only on your device.</p>
+            </div>
+            
+            <div id="rate-limit-notice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-sm text-yellow-800">
+                <p class="font-medium mb-1">⚠️ Fair Usage</p>
+                <p>The default API key is rate-limited to prevent abuse. For unlimited use, enter your own API key from your preferred AI provider.</p>
+            </div>
+
+
+            <!-- Test Connection Status -->
+            <div id="test-status" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
+
+            <div class="flex flex-col gap-3">
+                <button 
+                    onclick="testConnection()"
+                    id="test-btn"
+                    class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                >
+                    🧪 Test Connection
+                </button>
+                <div class="flex gap-3">
+                    <button 
+                        onclick="saveConfig()"
+                        class="flex-1 btn-primary text-white py-3 rounded-lg font-semibold"
+                    >
+                        Save & Continue
+                    </button>
+                    <button 
+                        onclick="closeConfigModal()"
+                        class="px-6 text-gray-600 hover:text-gray-800 font-medium"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Analyzing Your Responses</h3>
+            <p class="text-gray-600">This may take a moment...</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // SECURITY ENHANCEMENTS
+        // ============================================================================
+        
+        // Enforce HTTPS in production
+        if (location.protocol !== 'https:' && 
+            location.hostname !== 'localhost' && 
+            location.hostname !== '127.0.0.1' && 
+            location.hostname !== '') {
+            location.replace(`https:${location.href.substring(location.protocol.length)}`);
+        }
+
+        // HTML Sanitization Utilities
+        const SecurityUtils = {
+            // Escape HTML to prevent XSS
+            escapeHTML(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            },
+            
+            // Sanitize HTML content
+            sanitizeHTML(html) {
+                if (!html) return '';
+                
+                // Create temporary element
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                // Remove dangerous elements
+                const dangerous = ['script', 'iframe', 'object', 'embed', 'link', 'style'];
+                dangerous.forEach(tag => {
+                    const elements = temp.querySelectorAll(tag);
+                    elements.forEach(el => el.remove());
+                });
+                
+                // Remove event handler attributes
+                const allElements = temp.querySelectorAll('*');
+                allElements.forEach(el => {
+                    Array.from(el.attributes).forEach(attr => {
+                        if (attr.name.startsWith('on') || 
+                            attr.value.includes('javascript:')) {
+                            el.removeAttribute(attr.name);
+                        }
+                    });
+                });
+                
+                return temp.innerHTML;
+            }
+        };
+
+        // Input Sanitization for LLM Prompts
+        const InputSanitizer = {
+            MAX_ANSWER_LENGTH: 5000,
+            MAX_TOTAL_LENGTH: 50000,
+            
+            INJECTION_PATTERNS: [
+                /ignore\s+(all\s+)?previous\s+(instructions?|rules?)/i,
+                /system\s*:/i,
+                /assistant\s*:/i,
+                /user\s*:/i,
+                /<\s*script/i,
+                /javascript\s*:/i,
+                /on\w+\s*=/i,
+            ],
+            
+            sanitizeAnswer(text) {
+                if (!text || typeof text !== 'string') return '';
+                
+                text = text.trim();
+                
+                // Length limit
+                if (text.length > this.MAX_ANSWER_LENGTH) {
+                    text = text.substring(0, this.MAX_ANSWER_LENGTH) + '... [truncated]';
+                }
+                
+                // Check for injection patterns
+                for (const pattern of this.INJECTION_PATTERNS) {
+                    if (pattern.test(text)) {
+                        text = text.replace(pattern, '[FILTERED]');
+                    }
+                }
+                
+                // Prevent code block injection
+                text = text.replace(/```/g, "'''");
+                text = text.replace(/\0/g, '');
+                
+                return text;
+            },
+            
+            validateAnswer(text) {
+                const MIN_LENGTH = 10;
+                
+                if (!text || text.trim().length === 0) {
+                    return { valid: false, error: 'Please provide an answer before continuing.' };
+                }
+                
+                if (text.length < MIN_LENGTH) {
+                    return { valid: false, error: `Answer too short. Please write at least ${MIN_LENGTH} characters.` };
+                }
+                
+                if (text.length > this.MAX_ANSWER_LENGTH) {
+                    return { valid: false, error: `Answer too long. Maximum ${this.MAX_ANSWER_LENGTH} characters. Current: ${text.length}` };
+                }
+                
+                // Check for spam
+                if (/(.)\1{50,}/.test(text)) {
+                    return { valid: false, error: 'Answer appears to contain spam (repeated characters).' };
+                }
+                
+                return { valid: true };
+            }
+        };
+
+        // Rate Limiter
+        class RateLimiter {
+            constructor(maxCalls = 10, windowMs = 60000) {
+                this.maxCalls = maxCalls;
+                this.windowMs = windowMs;
+                this.calls = [];
+            }
+            
+            check() {
+                const now = Date.now();
+                this.calls = this.calls.filter(time => now - time < this.windowMs);
+                
+                if (this.calls.length >= this.maxCalls) {
+                    const oldestCall = this.calls[0];
+                    const resetIn = Math.ceil((oldestCall + this.windowMs - now) / 1000);
+                    return { allowed: false, resetIn: resetIn };
+                }
+                
+                this.calls.push(now);
+                return { allowed: true, remaining: this.maxCalls - this.calls.length };
+            }
+        }
+
+        const apiRateLimiter = new RateLimiter(10, 60000); // 10 calls per minute
+        const testRateLimiter = new RateLimiter(5, 30000); // 5 tests per 30 seconds
+
+        // Secure logging (only in development)
+        const DEBUG = false;
+        function secureLog(...args) {
+            if (DEBUG && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                console.log(...args);
+            }
+        }
+
+        // ============================================================================
+        // APPLICATION CODE
+        // ============================================================================
+        
+        // Get config from config.js or use fallback defaults
+        const appConfig = window.APP_CONFIG || {
+            defaultBaseURL: 'https://integrate.api.nvidia.com/v1',
+            defaultModel: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+            defaultApiKey: '',
+            adminApiKey: '',
+            corsProxyURL: 'https://corsproxy.io/?',
+            autoDetectLocalhost: true
+        };
+
+        // State Management
+        const state = {
+            currentQuestionIndex: 0,
+            answers: [],
+            config: {
+                baseURL: appConfig.defaultBaseURL,
+                model: appConfig.defaultModel,
+                apiKey: appConfig.defaultApiKey || appConfig.adminApiKey || ''
+            }
+        };
+
+        // Questions
+        const questions = [
+            {
+                id: 1,
+                text: "When you face a major setback or failure, what's the first thing you tell yourself?",
+                category: "self-talk"
+            },
+            {
+                id: 2,
+                text: "Complete this sentence: I would be more successful if only I...",
+                category: "limitations"
+            },
+            {
+                id: 3,
+                text: "What achievement are you most proud of, and why do you think you succeeded there?",
+                category: "strengths"
+            },
+            {
+                id: 4,
+                text: "When someone criticizes you, how do you typically interpret their feedback?",
+                category: "reactions"
+            },
+            {
+                id: 5,
+                text: "What recurring thought or worry keeps coming back to you, even when you try to ignore it?",
+                category: "patterns"
+            },
+            {
+                id: 6,
+                text: "If you could change one thing about how you approach challenges, what would it be and why?",
+                category: "self-awareness"
+            },
+            {
+                id: 7,
+                text: "What opportunity did you pass on that you still think about? What stopped you?",
+                category: "blockers"
+            },
+            {
+                id: 8,
+                text: "How do you decide what deserves your time and energy? What's your priority framework?",
+                category: "values"
+            },
+            {
+                id: 9,
+                text: "When you compare yourself to others, what thoughts typically arise?",
+                category: "biases"
+            },
+            {
+                id: 10,
+                text: "What belief about yourself would you want to be true, but you're not sure you actually believe it?",
+                category: "beliefs"
+            }
+        ];
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            loadProgress();
+            applyLocalhostConfig();
+        });
+
+        // Auto-apply CORS proxy for localhost if configured
+        function applyLocalhostConfig() {
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname === '';
+            
+            if (isLocalhost && appConfig.autoDetectLocalhost) {
+                // Only apply proxy if not already using one and not already saved
+                const saved = localStorage.getItem('systemPromptConfig');
+                if (!saved && !state.config.baseURL.includes('corsproxy')) {
+                    console.log('🔧 Localhost detected - Auto-configuring CORS proxy for development');
+                    state.config.baseURL = appConfig.corsProxyURL + appConfig.defaultBaseURL;
+                }
+            }
+        }
+
+        // Config Management (SECURITY ENHANCED)
+        function loadConfig() {
+            // Load non-sensitive config from localStorage
+            const savedPublicConfig = localStorage.getItem('systemPromptPublicConfig');
+            if (savedPublicConfig) {
+                const config = JSON.parse(savedPublicConfig);
+                state.config.baseURL = config.baseURL;
+                state.config.model = config.model;
+            }
+            
+            // Load API key from sessionStorage (cleared on browser close)
+            const savedApiKey = sessionStorage.getItem('systemPromptApiKey');
+            if (savedApiKey) {
+                state.config.apiKey = savedApiKey;
+            } else {
+                state.config.apiKey = appConfig.defaultApiKey || appConfig.adminApiKey || '';
+            }
+        }
+
+        function saveConfig() {
+            const baseURL = document.getElementById('base-url').value.trim() || appConfig.defaultBaseURL;
+            const model = document.getElementById('model-name').value.trim() || appConfig.defaultModel;
+            const apiKey = document.getElementById('api-key').value.trim();
+
+            // Allow empty API key if default is available
+            const finalApiKey = apiKey || appConfig.adminApiKey || '';
+            
+            if (!finalApiKey) {
+                alert('No API key available. Please enter your API key or contact the site administrator.');
+                return;
+            }
+
+            // Validate API key format only if user provided one
+            if (apiKey && apiKey.length < 10) {
+                alert('API key seems too short. Please check and try again.');
+                return;
+            }
+
+            // Determine if user customized any settings
+            const hasCustomBaseURL = baseURL !== appConfig.defaultBaseURL;
+            const hasCustomModel = model !== appConfig.defaultModel;
+            const hasCustomKey = apiKey !== '';
+            
+            // Store public config in localStorage (only if customized)
+            if (hasCustomBaseURL || hasCustomModel) {
+                const publicConfig = { baseURL, model };
+                localStorage.setItem('systemPromptPublicConfig', JSON.stringify(publicConfig));
+            } else {
+                localStorage.removeItem('systemPromptPublicConfig');
+            }
+            
+            // Store custom API key in sessionStorage if provided
+            if (hasCustomKey) {
+                sessionStorage.setItem('systemPromptApiKey', apiKey);
+                sessionStorage.setItem('usingCustomKey', 'true');
+            } else {
+                sessionStorage.removeItem('systemPromptApiKey');
+                sessionStorage.removeItem('usingCustomKey');
+            }
+            
+            state.config = { baseURL, model, apiKey: finalApiKey };
+            
+            closeConfigModal();
+            startQuestionnaire();
+        }
+
+        function showConfigModal() {
+            // Load current config or defaults
+            document.getElementById('base-url').value = state.config.baseURL || appConfig.defaultBaseURL;
+            document.getElementById('model-name').value = state.config.model || appConfig.defaultModel;
+            
+            // Only show custom API key if user is using one
+            const usingCustomKey = sessionStorage.getItem('usingCustomKey') === 'true';
+            const customKey = sessionStorage.getItem('systemPromptApiKey') || '';
+            document.getElementById('api-key').value = usingCustomKey ? customKey : '';
+            
+            // Show notice if using default configuration
+            const hasDefaultKey = appConfig.adminApiKey && appConfig.adminApiKey.length > 0;
+            const usingDefaults = !usingCustomKey && 
+                                 state.config.baseURL === appConfig.defaultBaseURL &&
+                                 state.config.model === appConfig.defaultModel;
+            
+            const defaultNotice = document.getElementById('using-default-notice');
+            const rateLimitNotice = document.getElementById('rate-limit-notice');
+            
+            if (hasDefaultKey && usingDefaults) {
+                defaultNotice.classList.remove('hidden');
+                rateLimitNotice.classList.remove('hidden');
+            } else {
+                defaultNotice.classList.add('hidden');
+                rateLimitNotice.classList.add('hidden');
+            }
+            
+            // Hide test status from previous attempts
+            document.getElementById('test-status').classList.add('hidden');
+            
+            document.getElementById('config-modal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.add('hidden');
+        }
+
+        function setDirectAPI() {
+            document.getElementById('base-url').value = appConfig.defaultBaseURL;
+            showTestStatus('success', '✅ Reset to default API endpoint.');
+        }
+        
+        function resetModel() {
+            document.getElementById('model-name').value = appConfig.defaultModel;
+            showTestStatus('success', '✅ Reset to default model.');
+        }
+
+        function setCORSProxy() {
+            const warning = `⚠️ SECURITY WARNING ⚠️
+
+CORS Proxy routes ALL your API traffic through a third-party server.
+
+RISKS:
+• Your API key will be visible to the proxy operator
+• Your personal responses will pass through their servers
+• No guarantee of privacy or security
+
+ONLY use this for:
+• Local development testing
+• Learning how the app works
+
+For REAL USE, please deploy to:
+• GitHub Pages (free, 5 minutes)
+• Netlify, Vercel, or Cloudflare Pages
+
+Do you understand the risks and want to continue?`;
+            
+            if (!confirm(warning)) {
+                return;
+            }
+            
+            if (!confirm('Are you SURE? This exposes your API key to a third party.')) {
+                return;
+            }
+            
+            document.getElementById('base-url').value = appConfig.corsProxyURL + appConfig.defaultBaseURL;
+            showTestStatus('warning', '⚠️ CORS proxy enabled. Your API key is exposed to a third party!');
+        }
+
+        async function testConnection() {
+            // Rate limiting check
+            const rateCheck = testRateLimiter.check();
+            if (!rateCheck.allowed) {
+                showTestStatus('error', `❌ Too many test attempts. Please wait ${rateCheck.resetIn} seconds.`);
+                return;
+            }
+
+            const baseURL = document.getElementById('base-url').value.trim() || appConfig.defaultBaseURL;
+            const model = document.getElementById('model-name').value.trim() || appConfig.defaultModel;
+            const apiKey = document.getElementById('api-key').value.trim() || appConfig.adminApiKey || '';
+
+            if (!apiKey) {
+                showTestStatus('error', '❌ Please enter an API key first');
+                return;
+            }
+
+            const testBtn = document.getElementById('test-btn');
+            const originalText = testBtn.textContent;
+            testBtn.textContent = '⏳ Testing...';
+            testBtn.disabled = true;
+
+            try {
+                secureLog('=== API Test Debug Info ===');
+                secureLog('Testing connection to:', `${baseURL}/chat/completions`);
+                secureLog('Using model:', model);
+                secureLog('API Key length:', apiKey.length);
+
+                const requestBody = {
+                    model: model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: 'Say "Connection successful!" in 3 words or less.'
+                        }
+                    ],
+                    max_tokens: 20,
+                    temperature: 0.7,
+                    stream: false
+                };
+
+                secureLog('Request body:', JSON.stringify(requestBody, null, 2));
+
+                const response = await fetch(`${baseURL}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                }).catch(err => {
+                    secureLog('Fetch error details:', err);
+                    throw err;
+                });
+
+                secureLog('Test response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    secureLog('Test error response:', errorText);
+                    
+                    let errorMessage = 'Connection failed';
+                    
+                    // Only show user-friendly messages
+                    if (response.status === 401) {
+                        errorMessage = 'Invalid API key';
+                    } else if (response.status === 403) {
+                        errorMessage = 'Access forbidden - check API key permissions';
+                    } else if (response.status === 429) {
+                        errorMessage = 'Rate limit exceeded';
+                    } else if (response.status >= 500) {
+                        errorMessage = 'Server error - try again later';
+                    } else {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    
+                    showTestStatus('error', `❌ ${errorMessage}`);
+                    return;
+                }
+
+                const data = await response.json();
+                secureLog('Test successful!', data);
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    showTestStatus('success', `✅ Connection successful! Model responded: "${data.choices[0].message.content.trim()}"`);
+                } else {
+                    showTestStatus('success', '✅ Connection successful! API is responding correctly.');
+                }
+
+            } catch (error) {
+                secureLog('Test connection error:', error);
+                
+                let errorMsg = 'Connection failed';
+                
+                if (error.message === 'Failed to fetch') {
+                    errorMsg = 'Network request failed. Possible issues: Network connectivity, CORS, or invalid endpoint URL.';
+                } else {
+                    errorMsg = 'Connection failed. Please check your settings.';
+                }
+                
+                showTestStatus('error', `❌ ${errorMsg}`);
+            } finally {
+                testBtn.textContent = originalText;
+                testBtn.disabled = false;
+            }
+        }
+
+        function showTestStatus(type, message) {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.classList.remove('hidden', 'bg-green-50', 'bg-red-50', 'text-green-800', 'text-red-800', 'border', 'border-green-200', 'border-red-200');
+            
+            if (type === 'success') {
+                statusDiv.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+            } else {
+                statusDiv.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+            }
+            
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+        }
+
+        // Progress Management
+        function loadProgress() {
+            const saved = localStorage.getItem('systemPromptProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                state.currentQuestionIndex = progress.currentQuestionIndex || 0;
+                state.answers = progress.answers || [];
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('systemPromptProgress', JSON.stringify({
+                currentQuestionIndex: state.currentQuestionIndex,
+                answers: state.answers,
+                timestamp: new Date().toISOString()
+            }));
+        }
+
+        // New function to handle start button
+        function startDiscovery() {
+            // Check if we have a default key or user's custom key
+            const hasDefaultKey = appConfig.adminApiKey && appConfig.adminApiKey.length > 0;
+            const hasCustomKey = sessionStorage.getItem('systemPromptApiKey');
+            
+            if (hasDefaultKey || hasCustomKey) {
+                // Auto-start with available key
+                if (!state.config.apiKey) {
+                    state.config.apiKey = hasCustomKey || appConfig.adminApiKey;
+                }
+                startQuestionnaire();
+            } else {
+                // No key available, show config modal
+                showConfigModal();
+            }
+        }
+
+        // Questionnaire
+        function startQuestionnaire() {
+            if (!state.config.apiKey) {
+                showConfigModal();
+                return;
+            }
+
+            document.getElementById('landing').classList.add('hidden');
+            document.getElementById('questionnaire').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            // Update API status indicator
+            updateAPIStatusIndicator();
+            
+            buildQuestionNav();
+            displayQuestion();
+        }
+        
+        // Show which configuration is being used
+        function updateAPIStatusIndicator() {
+            const indicator = document.getElementById('api-status-indicator');
+            const usingCustomKey = sessionStorage.getItem('usingCustomKey') === 'true';
+            const savedConfig = localStorage.getItem('systemPromptPublicConfig');
+            const hasCustomConfig = savedConfig !== null;
+            
+            if (usingCustomKey || hasCustomConfig) {
+                indicator.textContent = '🔑 Using custom configuration';
+                indicator.className = 'text-xs text-green-600 mt-1';
+            } else if (appConfig.adminApiKey) {
+                indicator.textContent = '✨ Using default configuration';
+                indicator.className = 'text-xs text-blue-600 mt-1';
+            } else {
+                indicator.textContent = '';
+            }
+        }
+
+        function buildQuestionNav() {
+            const navList = document.getElementById('question-list');
+            navList.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const isAnswered = state.answers[index] && state.answers[index].trim() !== '';
+                const isCurrent = index === state.currentQuestionIndex;
+                
+                const navItem = document.createElement('button');
+                navItem.className = `w-full text-left px-3 py-2 rounded-lg transition flex items-center gap-2 ${
+                    isCurrent 
+                        ? 'bg-purple-100 text-purple-700 font-semibold' 
+                        : isAnswered 
+                            ? 'bg-green-50 text-green-700 hover:bg-green-100' 
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`;
+                
+                navItem.onclick = () => jumpToQuestion(index);
+                
+                const icon = document.createElement('span');
+                icon.textContent = isAnswered ? '✓' : (index + 1);
+                icon.className = `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                    isCurrent 
+                        ? 'bg-purple-600 text-white' 
+                        : isAnswered 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-300 text-gray-600'
+                }`;
+                
+                const label = document.createElement('span');
+                label.className = 'text-sm truncate';
+                label.textContent = `Q${index + 1}: ${question.text.substring(0, 40)}...`;
+                
+                navItem.appendChild(icon);
+                navItem.appendChild(label);
+                navList.appendChild(navItem);
+            });
+        }
+
+        function jumpToQuestion(index) {
+            // Save current answer before jumping
+            const currentAnswer = document.getElementById('answer-input').value.trim();
+            if (currentAnswer) {
+                state.answers[state.currentQuestionIndex] = currentAnswer;
+                saveProgress();
+            }
+            
+            state.currentQuestionIndex = index;
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const question = questions[state.currentQuestionIndex];
+            const totalQuestions = questions.length;
+            const progress = ((state.currentQuestionIndex + 1) / totalQuestions) * 100;
+
+            document.getElementById('current-q').textContent = state.currentQuestionIndex + 1;
+            document.getElementById('total-q').textContent = totalQuestions;
+            document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+            document.getElementById('progress-bar').style.width = progress + '%';
+            document.getElementById('question-text').textContent = question.text;
+            
+            // Load saved answer if exists
+            const savedAnswer = state.answers[state.currentQuestionIndex];
+            document.getElementById('answer-input').value = savedAnswer || '';
+
+            // Update button visibility
+            if (state.currentQuestionIndex > 0) {
+                document.getElementById('prev-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('prev-btn').classList.add('hidden');
+            }
+
+            // Update next button text
+            const nextBtn = document.getElementById('next-btn');
+            if (state.currentQuestionIndex === totalQuestions - 1) {
+                nextBtn.textContent = 'Analyze →';
+            } else {
+                nextBtn.textContent = 'Next →';
+            }
+
+            // Update navigation highlighting
+            buildQuestionNav();
+
+            // Setup character counter
+            const textarea = document.getElementById('answer-input');
+            const counter = document.getElementById('char-counter');
+            
+            function updateCharCounter() {
+                const length = textarea.value.length;
+                const max = InputSanitizer.MAX_ANSWER_LENGTH;
+                counter.textContent = `${length} / ${max} characters`;
+                
+                if (length > max) {
+                    counter.classList.add('text-red-600', 'font-semibold');
+                    counter.textContent = `${length} / ${max} characters - TOO LONG`;
+                } else if (length > max * 0.9) {
+                    counter.classList.remove('text-red-600');
+                    counter.classList.add('text-orange-600', 'font-semibold');
+                } else {
+                    counter.classList.remove('text-red-600', 'text-orange-600', 'font-semibold');
+                    counter.classList.add('text-gray-500');
+                }
+            }
+            
+            // Remove old listener if exists and add new one
+            textarea.removeEventListener('input', updateCharCounter);
+            textarea.addEventListener('input', updateCharCounter);
+            updateCharCounter();
+
+            // Focus on textarea
+            textarea.focus();
+        }
+
+        function nextQuestion() {
+            const rawAnswer = document.getElementById('answer-input').value.trim();
+            
+            // Validate input
+            const validation = InputSanitizer.validateAnswer(rawAnswer);
+            if (!validation.valid) {
+                alert(validation.error);
+                return;
+            }
+
+            // Sanitize input
+            const sanitizedAnswer = InputSanitizer.sanitizeAnswer(rawAnswer);
+            
+            // Warn if content was modified
+            if (sanitizedAnswer !== rawAnswer && sanitizedAnswer.includes('[FILTERED]')) {
+                const proceed = confirm(
+                    'Your answer contained patterns that were filtered for security.\n\n' +
+                    'The filtered version will be saved. Continue?'
+                );
+                if (!proceed) return;
+            }
+
+            // Save sanitized answer
+            state.answers[state.currentQuestionIndex] = sanitizedAnswer;
+            saveProgress();
+
+            // Move to next question or analyze
+            if (state.currentQuestionIndex < questions.length - 1) {
+                state.currentQuestionIndex++;
+                displayQuestion();
+            } else {
+                analyzeResponses();
+            }
+        }
+
+        function previousQuestion() {
+            if (state.currentQuestionIndex > 0) {
+                state.currentQuestionIndex--;
+                displayQuestion();
+            }
+        }
+
+        // LLM Analysis
+        async function analyzeResponses() {
+            // Rate limiting check
+            const rateCheck = apiRateLimiter.check();
+            if (!rateCheck.allowed) {
+                alert(`Rate limit exceeded. Please wait ${rateCheck.resetIn} seconds before trying again.`);
+                return;
+            }
+
+            document.getElementById('loading-modal').classList.remove('hidden');
+
+            try {
+                const metaPrompt = buildMetaPrompt();
+                
+                secureLog('Making API request to:', `${state.config.baseURL}/chat/completions`);
+                secureLog('Using model:', state.config.model);
+                
+                const response = await fetch(`${state.config.baseURL}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.config.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: state.config.model,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are an insightful psychological analyst specializing in cognitive patterns, beliefs, and mental frameworks. Your analyses are empathetic, specific, and actionable.'
+                            },
+                            {
+                                role: 'user',
+                                content: metaPrompt
+                            }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 2500,
+                        stream: false
+                    })
+                });
+
+                secureLog('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    secureLog('API Error Response:', errorText);
+                    
+                    // User-friendly error messages
+                    let errorMessage = 'Analysis failed';
+                    
+                    if (response.status === 401) {
+                        errorMessage = 'Invalid API key';
+                    } else if (response.status === 403) {
+                        errorMessage = 'Access forbidden - check API key permissions';
+                    } else if (response.status === 429) {
+                        errorMessage = 'Rate limit exceeded - please wait and try again';
+                    } else if (response.status >= 500) {
+                        errorMessage = 'Server error - please try again later';
+                    } else {
+                        errorMessage = `API Error (${response.status})`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                secureLog('API Response received');
+                
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    throw new Error('Invalid response format from API');
+                }
+                
+                const analysis = data.choices[0].message.content;
+
+                // Save results
+                const results = {
+                    analysis,
+                    timestamp: new Date().toISOString(),
+                    answers: state.answers,
+                    questions: questions
+                };
+                localStorage.setItem('systemPromptResults', JSON.stringify(results));
+
+                displayResults(analysis);
+            } catch (error) {
+                secureLog('Analysis error:', error);
+                
+                let userMessage = `Failed to analyze responses: ${error.message}\n\n`;
+                
+                if (error.message === 'Failed to fetch') {
+                    userMessage += `Network request failed.\n\n`;
+                    userMessage += `Please check:\n`;
+                    userMessage += `• Network connectivity\n`;
+                    userMessage += `• API endpoint URL\n`;
+                    userMessage += `• API key validity\n\n`;
+                    userMessage += `Your answers are saved locally.`;
+                } else {
+                    userMessage += `Please check your API configuration and try again.\n\n`;
+                    userMessage += `Your answers are saved locally.`;
+                }
+                
+                alert(userMessage);
+            } finally {
+                document.getElementById('loading-modal').classList.add('hidden');
+            }
+        }
+
+        function buildMetaPrompt() {
+            let prompt = `I need you to analyze a person's responses to discover their internal "system prompt" - the underlying beliefs, biases, and mental blockers that shape their worldview and decisions.
+
+Below are their responses to a series of introspective questions:
+
+`;
+
+            let totalLength = 0;
+            questions.forEach((q, i) => {
+                // Re-sanitize answers for extra safety
+                const sanitizedAnswer = InputSanitizer.sanitizeAnswer(state.answers[i] || '');
+                totalLength += sanitizedAnswer.length;
+                
+                prompt += `**Question ${i + 1}:** ${q.text}\n`;
+                prompt += `**Response:** ${sanitizedAnswer}\n\n`;
+            });
+            
+            // Check total length
+            if (totalLength > InputSanitizer.MAX_TOTAL_LENGTH) {
+                throw new Error('Combined answers too long. Please shorten your responses.');
+            }
+
+            prompt += `
+Based on these responses, please provide a comprehensive analysis structured as follows:
+
+## YOUR SYSTEM PROMPT
+Synthesize their responses into a concise "system prompt" - a 2-3 sentence summary of the core operating principles, beliefs, and assumptions that drive their behavior and decisions.
+
+## IDENTIFIED BLOCKERS
+List 3-5 specific mental barriers or self-imposed limitations that are holding them back. Be specific and reference their actual responses.
+
+## COGNITIVE BIASES
+Identify 2-4 thinking patterns or cognitive biases evident in their responses (e.g., negativity bias, imposter syndrome, perfectionism, comparison trap, etc.). Explain how these manifest.
+
+## STRENGTHS & ASSETS
+Highlight 3-4 positive aspects of their mental framework - areas of self-awareness, resilience, or healthy perspectives.
+
+## GROWTH OPPORTUNITIES
+Provide 3-5 specific, actionable recommendations for how they can evolve their mental operating system. These should be concrete practices or mindset shifts, not generic advice.
+
+Be empathetic but honest. Focus on patterns across multiple responses. Make insights specific to their actual words, not generic psychological advice. Use a warm, direct tone as if speaking to them personally.`;
+
+            return prompt;
+        }
+
+        // Results Display (SECURITY ENHANCED - XSS Protection)
+        function displayResults(analysis) {
+            document.getElementById('questionnaire').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+            window.scrollTo(0, 0);
+
+            const resultsContainer = document.getElementById('results-content');
+            
+            // Parse the analysis (assuming markdown-like structure)
+            const sections = parseAnalysis(analysis);
+            
+            let html = '';
+            sections.forEach(section => {
+                // Escape title to prevent XSS
+                const safeTitle = SecurityUtils.escapeHTML(section.title);
+                // Sanitize content HTML
+                const safeContent = SecurityUtils.sanitizeHTML(section.content);
+                
+                html += `
+                    <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">${safeTitle}</h2>
+                        <div class="prose prose-lg text-gray-700 leading-relaxed">
+                            ${safeContent}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        function parseAnalysis(analysis) {
+            const sections = [];
+            const lines = analysis.split('\n');
+            let currentSection = null;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                
+                // Check for section headers (## Title)
+                if (trimmed.startsWith('##')) {
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+                    currentSection = {
+                        title: trimmed.replace(/^#+\s*/, ''),
+                        content: ''
+                    };
+                } else if (currentSection && trimmed) {
+                    // Add content to current section
+                    currentSection.content += line + '\n';
+                }
+            });
+
+            // Add last section
+            if (currentSection) {
+                sections.push(currentSection);
+            }
+
+            // Format content (convert to HTML)
+            sections.forEach(section => {
+                section.content = formatContent(section.content);
+            });
+
+            return sections;
+        }
+
+        function formatContent(text) {
+            // Simple markdown-like formatting
+            return text
+                .split('\n')
+                .map(line => {
+                    line = line.trim();
+                    if (!line) return '';
+                    
+                    // Bold text
+                    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    
+                    // Bullet points
+                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                        return '<li>' + line.substring(2) + '</li>';
+                    }
+                    
+                    // Numbers
+                    const numberMatch = line.match(/^(\d+)\.\s*(.*)/);
+                    if (numberMatch) {
+                        return `<div class="mb-3"><strong>${numberMatch[1]}.</strong> ${numberMatch[2]}</div>`;
+                    }
+                    
+                    return '<p class="mb-3">' + line + '</p>';
+                })
+                .join('\n');
+        }
+
+        // Actions
+        function downloadResults() {
+            const saved = localStorage.getItem('systemPromptResults');
+            if (!saved) return;
+
+            const results = JSON.parse(saved);
+            const date = new Date(results.timestamp).toLocaleDateString();
+            
+            let text = `SYSTEM PROMPT ANALYSIS\nGenerated: ${date}\n\n`;
+            text += '=' .repeat(60) + '\n\n';
+            
+            questions.forEach((q, i) => {
+                text += `Q${i + 1}: ${q.text}\n`;
+                text += `A: ${results.answers[i]}\n\n`;
+            });
+            
+            text += '=' .repeat(60) + '\n\n';
+            text += 'ANALYSIS\n\n';
+            text += results.analysis;
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `system-prompt-analysis-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function startOver() {
+            if (confirm('Start a new analysis? Your current progress will be saved but you\'ll begin a new questionnaire.')) {
+                state.currentQuestionIndex = 0;
+                state.answers = [];
+                saveProgress();
+                
+                document.getElementById('results').classList.add('hidden');
+                document.getElementById('landing').classList.remove('hidden');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ This will delete ALL stored data including your API key, responses, and results. This cannot be undone. Continue?')) {
+                // Clear localStorage
+                localStorage.removeItem('systemPromptConfig');
+                localStorage.removeItem('systemPromptPublicConfig');
+                localStorage.removeItem('systemPromptProgress');
+                localStorage.removeItem('systemPromptResults');
+                
+                // Clear sessionStorage
+                sessionStorage.removeItem('systemPromptApiKey');
+                
+                state.currentQuestionIndex = 0;
+                state.answers = [];
+                state.config = {
+                    baseURL: 'https://api.openai.com/v1',
+                    model: 'gpt-4',
+                    apiKey: ''
+                };
+                
+                alert('All data cleared successfully.');
+                location.reload();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                const questionnaireVisible = !document.getElementById('questionnaire').classList.contains('hidden');
+                if (questionnaireVisible) {
+                    nextQuestion();
+                }
+            }
+        });
+
+        // ============================================================================
+        // GLOBAL ERROR HANDLERS (LOW SEVERITY FIX)
+        // ============================================================================
+        
+        // Catch unhandled errors
+        window.addEventListener('error', (event) => {
+            secureLog('Global error caught:', event.error);
+            
+            // Save progress before potential crash
+            try {
+                saveProgress();
+            } catch (e) {
+                secureLog('Failed to save progress during error:', e);
+            }
+            
+            // Show user-friendly message
+            alert('An unexpected error occurred. Your progress has been saved. Please refresh the page if problems continue.');
+            
+            // Prevent default browser error handling
+            event.preventDefault();
+        });
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            secureLog('Unhandled promise rejection:', event.reason);
+            
+            // Try to save progress
+            try {
+                saveProgress();
+            } catch (e) {
+                secureLog('Failed to save progress during rejection:', e);
+            }
+            
+            // Show user-friendly message
+            alert('A background error occurred. Your progress has been saved. Please try again.');
+            
+            event.preventDefault();
+        });
+    </script>
+</body>
+</html>
+
