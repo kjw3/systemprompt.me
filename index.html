@@ -1389,16 +1389,22 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         // Actions
         async function downloadResults() {
             const saved = localStorage.getItem('systemPromptResults');
-            if (!saved) return;
+            if (!saved) {
+                alert('No results found to download.');
+                return;
+            }
 
             const results = JSON.parse(saved);
             const date = new Date(results.timestamp).toLocaleDateString();
             
+            // Parse the analysis to get sections
+            const sections = parseAnalysis(results.analysis);
+            
+            console.log('Generating PDF with', sections.length, 'sections');
+            
             // Create a temporary container for PDF generation with inline styles
             const pdfContainer = document.createElement('div');
             pdfContainer.style.cssText = `
-                position: absolute;
-                left: -9999px;
                 width: 800px;
                 padding: 40px;
                 background-color: white;
@@ -1407,10 +1413,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 line-height: 1.6;
             `;
             
-            // Get the results content
-            const resultsContent = document.getElementById('results-content');
-            
-            // Build the PDF content with inline styles
+            // Build the PDF content with inline styles directly from parsed data
             let htmlContent = `
                 <div style="margin-bottom: 30px;">
                     <h1 style="color: #6366f1; font-size: 32px; margin-bottom: 10px; font-weight: bold;">🧠 System Prompt Analysis</h1>
@@ -1418,25 +1421,22 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 </div>
             `;
             
-            // Clone each result card with inline styles
-            const cards = resultsContent.querySelectorAll('.result-card');
-            cards.forEach(card => {
-                const title = card.querySelector('h2');
-                const content = card.querySelector('.prose');
-                
-                if (title && content) {
-                    htmlContent += `
-                        <div style="background: #f9fafb; padding: 25px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #6366f1; page-break-inside: avoid;">
-                            <h2 style="color: #4338ca; font-size: 24px; margin-top: 0; margin-bottom: 15px; font-weight: bold;">${title.textContent}</h2>
-                            <div style="color: #374151; font-size: 16px;">${content.innerHTML}</div>
-                        </div>
-                    `;
-                }
+            // Add each section with inline styles
+            sections.forEach(section => {
+                htmlContent += `
+                    <div style="background: #f9fafb; padding: 25px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #6366f1; page-break-inside: avoid;">
+                        <h2 style="color: #4338ca; font-size: 24px; margin-top: 0; margin-bottom: 15px; font-weight: bold;">${section.title}</h2>
+                        <div style="color: #374151; font-size: 16px; line-height: 1.8;">${section.content}</div>
+                    </div>
+                `;
             });
             
             pdfContainer.innerHTML = htmlContent;
             
-            // Add to document temporarily
+            // Add to document temporarily (must be visible for html2canvas)
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.top = '0';
             document.body.appendChild(pdfContainer);
             
             // Configure PDF options
@@ -1448,7 +1448,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                     scale: 2,
                     useCORS: true,
                     letterRendering: true,
-                    logging: false
+                    logging: true
                 },
                 jsPDF: { 
                     unit: 'in', 
@@ -1461,11 +1461,13 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             };
             
             try {
+                console.log('Starting PDF generation...');
                 // Generate and download PDF
                 await html2pdf().set(opt).from(pdfContainer).save();
+                console.log('PDF generated successfully');
             } catch (error) {
                 console.error('PDF generation error:', error);
-                alert('Failed to generate PDF. Please try again.');
+                alert('Failed to generate PDF: ' + error.message);
             } finally {
                 // Clean up
                 if (pdfContainer.parentNode) {
