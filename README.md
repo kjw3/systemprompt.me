@@ -292,7 +292,7 @@ Contributions welcome! Some areas:
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file
+Apache 2.0 License - See [LICENSE](LICENSE) file
 
 **You are free to**:
 - ✅ Use commercially
