@@ -126,7 +126,8 @@ export default {
         messages: body.messages,
         temperature: body.temperature || 0.7,
         max_tokens: body.max_tokens || 2000,
-        top_p: body.top_p || 0.9
+        top_p: body.top_p || 0.9,
+        stream: body.stream !== false // Default to streaming unless explicitly disabled
       };
 
       // Forward request to AI API
@@ -139,11 +140,9 @@ export default {
         body: JSON.stringify(apiRequest)
       });
 
-      // Get response
-      const apiData = await apiResponse.json();
-
-      // Check for API errors
+      // Check for errors before streaming
       if (!apiResponse.ok) {
+        const apiData = await apiResponse.json();
         console.error('API error:', apiResponse.status, apiData);
         return new Response(JSON.stringify({
           error: 'AI API error',
@@ -155,16 +154,32 @@ export default {
         });
       }
 
-      // Return successful response with rate limit info
-      return new Response(JSON.stringify(apiData), {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-          'X-RateLimit-Limit': RATE_LIMIT_REQUESTS.toString(),
-          'X-RateLimit-Remaining': rateLimit.remaining.toString()
-        }
-      });
+      // If streaming, pass through the stream directly
+      if (body.stream !== false) {
+        return new Response(apiResponse.body, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-RateLimit-Limit': RATE_LIMIT_REQUESTS.toString(),
+            'X-RateLimit-Remaining': rateLimit.remaining.toString()
+          }
+        });
+      } else {
+        // Non-streaming mode - buffer and return JSON
+        const apiData = await apiResponse.json();
+        return new Response(JSON.stringify(apiData), {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': RATE_LIMIT_REQUESTS.toString(),
+            'X-RateLimit-Remaining': rateLimit.remaining.toString()
+          }
+        });
+      }
 
     } catch (error) {
       console.error('Worker error:', error);
