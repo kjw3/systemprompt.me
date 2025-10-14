@@ -386,12 +386,20 @@
 
     <!-- Loading Modal -->
     <div id="loading-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
             <div class="flex items-center justify-center mb-4">
                 <div class="spinner mr-3"></div>
-                <h3 class="text-xl font-semibold text-gray-800">Analyzing Your Responses</h3>
+                <h3 class="text-xl font-semibold text-gray-800" id="analysis-status">Analyzing Your Responses</h3>
             </div>
-            <div id="streaming-content" class="mt-6 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto text-left text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"></div>
+            <div class="mt-6 text-center text-gray-600" id="analysis-message">
+                Processing your answers and generating insights...
+            </div>
+            <div class="mt-4">
+                <button onclick="toggleThinking()" class="text-sm text-indigo-600 hover:text-indigo-800 underline" id="toggle-thinking-btn">
+                    Show AI Thinking
+                </button>
+                <div id="streaming-content" class="hidden mt-4 p-4 bg-gray-50 rounded-lg max-h-64 overflow-y-auto text-left text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-mono"></div>
+            </div>
         </div>
     </div>
 
@@ -1168,9 +1176,17 @@ Do you understand the risks and want to continue?`;
 
             const loadingModal = document.getElementById('loading-modal');
             const streamingContent = document.getElementById('streaming-content');
+            const statusEl = document.getElementById('analysis-status');
+            const messageEl = document.getElementById('analysis-message');
+            const toggleBtn = document.getElementById('toggle-thinking-btn');
             
+            // Reset modal state
             loadingModal.classList.remove('hidden');
-            streamingContent.textContent = ''; // Clear previous content
+            streamingContent.textContent = '';
+            streamingContent.classList.add('hidden');
+            toggleBtn.textContent = 'Show AI Thinking';
+            statusEl.textContent = 'Analyzing Your Responses';
+            messageEl.textContent = 'Processing your answers and generating insights...';
 
             try {
                 const metaPrompt = buildMetaPrompt();
@@ -1238,7 +1254,12 @@ Do you understand the risks and want to continue?`;
                 }
 
                 // Handle streaming response
-                streamingContent.textContent = 'Receiving analysis...';
+                const statusEl = document.getElementById('analysis-status');
+                const messageEl = document.getElementById('analysis-message');
+                const streamingContent = document.getElementById('streaming-content');
+                
+                let inThinkingMode = false;
+                let thinkingContent = '';
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -1265,11 +1286,36 @@ Do you understand the risks and want to continue?`;
                                 
                                 if (content) {
                                     analysis += content;
-                                    // Update the streaming display (remove <think> tags for display)
-                                    const displayText = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-                                    streamingContent.textContent = displayText;
-                                    // Auto-scroll to bottom
-                                    streamingContent.scrollTop = streamingContent.scrollHeight;
+                                    
+                                    // Check if we're in thinking mode
+                                    if (content.includes('<think>') || inThinkingMode) {
+                                        inThinkingMode = true;
+                                        thinkingContent += content;
+                                        statusEl.textContent = 'AI is thinking...';
+                                        messageEl.textContent = 'Analyzing patterns and generating insights';
+                                        
+                                        // Update thinking display if visible
+                                        if (!streamingContent.classList.contains('hidden')) {
+                                            streamingContent.textContent = thinkingContent.replace(/<\/?think>/gi, '').trim();
+                                            streamingContent.scrollTop = streamingContent.scrollHeight;
+                                        }
+                                    }
+                                    
+                                    if (content.includes('</think>')) {
+                                        inThinkingMode = false;
+                                        statusEl.textContent = 'Generating Report';
+                                        messageEl.textContent = 'Formatting your personalized analysis...';
+                                    }
+                                    
+                                    // After thinking, show progress
+                                    if (!inThinkingMode && !content.includes('<think>')) {
+                                        // Update thinking display if visible
+                                        if (!streamingContent.classList.contains('hidden')) {
+                                            const displayText = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                                            streamingContent.textContent = displayText;
+                                            streamingContent.scrollTop = streamingContent.scrollHeight;
+                                        }
+                                    }
                                 }
                             } catch (e) {
                                 // Ignore parse errors for incomplete chunks
@@ -1278,6 +1324,8 @@ Do you understand the risks and want to continue?`;
                     }
                 }
                 
+                statusEl.textContent = 'Analysis Complete!';
+                messageEl.textContent = 'Preparing your results...';
                 secureLog('API Response received (streaming complete)');
                 
                 // Strip any <think> tags from final analysis
@@ -1438,30 +1486,55 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         }
 
         function formatContent(text) {
-            // Simple markdown-like formatting
-            return text
-                .split('\n')
-                .map(line => {
-                    line = line.trim();
-                    if (!line) return '';
-                    
-                    // Bold text
-                    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    
-                    // Bullet points
-                    if (line.startsWith('- ') || line.startsWith('* ')) {
-                        return '<li>' + line.substring(2) + '</li>';
+            if (!text) return '';
+            
+            // Process the text line by line
+            const lines = text.split('\n');
+            const formatted = [];
+            
+            for (let line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                
+                // Bold text - escape HTML first, then apply markdown
+                let processed = trimmed
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Bold
+                
+                // Bullet points
+                if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                    formatted.push('<li class="ml-4">' + processed.substring(2) + '</li>');
+                }
+                // Numbered lists
+                else if (/^\d+\.\s/.test(trimmed)) {
+                    const match = trimmed.match(/^(\d+)\.\s*(.+)/);
+                    if (match) {
+                        formatted.push(`<div class="mb-3"><strong>${match[1]}.</strong> ${match[2].replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</div>`);
                     }
-                    
-                    // Numbers
-                    const numberMatch = line.match(/^(\d+)\.\s*(.*)/);
-                    if (numberMatch) {
-                        return `<div class="mb-3"><strong>${numberMatch[1]}.</strong> ${numberMatch[2]}</div>`;
-                    }
-                    
-                    return '<p class="mb-3">' + line + '</p>';
-                })
-                .join('\n');
+                }
+                // Regular paragraphs
+                else {
+                    formatted.push('<p class="mb-3">' + processed + '</p>');
+                }
+            }
+            
+            return formatted.join('\n');
+        }
+
+        // Toggle thinking display
+        function toggleThinking() {
+            const streamingContent = document.getElementById('streaming-content');
+            const toggleBtn = document.getElementById('toggle-thinking-btn');
+            
+            if (streamingContent.classList.contains('hidden')) {
+                streamingContent.classList.remove('hidden');
+                toggleBtn.textContent = 'Hide AI Thinking';
+            } else {
+                streamingContent.classList.add('hidden');
+                toggleBtn.textContent = 'Show AI Thinking';
+            }
         }
 
         // Actions
