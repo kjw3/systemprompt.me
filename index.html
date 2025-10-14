@@ -1425,7 +1425,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             return prompt;
         }
 
-        // Results Display - Just render markdown as-is
+        // Results Display - Split by sections, render each with marked.js
         function displayResults(analysis) {
             document.getElementById('questionnaire').classList.add('hidden');
             document.getElementById('results').classList.remove('hidden');
@@ -1433,17 +1433,58 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
             const resultsContainer = document.getElementById('results-content');
             
-            // Convert markdown to HTML using marked.js
-            const htmlContent = marked.parse(analysis);
+            // Split by ## headers (but keep the headers)
+            const sections = [];
+            const parts = analysis.split(/^## /gm);
             
-            // Wrap in a single card with prose styling
-            resultsContainer.innerHTML = `
-                <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
-                    <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                        ${htmlContent}
-                    </div>
-                </div>
-            `;
+            // First part is before any headers (if exists)
+            if (parts[0].trim()) {
+                sections.push({
+                    title: null,
+                    content: parts[0].trim()
+                });
+            }
+            
+            // Process remaining parts (each starts with a header)
+            for (let i = 1; i < parts.length; i++) {
+                const lines = parts[i].split('\n');
+                const title = lines[0].trim();
+                const content = lines.slice(1).join('\n').trim();
+                
+                sections.push({
+                    title: title,
+                    content: content
+                });
+            }
+            
+            // Render each section
+            let html = '';
+            sections.forEach(section => {
+                if (section.title) {
+                    // Section with title - separate card
+                    const contentHtml = marked.parse(section.content);
+                    html += `
+                        <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">${section.title}</h2>
+                            <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                                ${contentHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Content without title (intro text)
+                    const contentHtml = marked.parse(section.content);
+                    html += `
+                        <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                            <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                                ${contentHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            resultsContainer.innerHTML = html;
         }
 
 
