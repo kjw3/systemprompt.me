@@ -4,7 +4,7 @@
 
 A privacy-first web app that helps you understand your cognitive patterns, biases, and mental operating system through 10 thoughtfully-crafted questions and advanced AI analysis.
 
-🔗 **[Try it now](https://yourusername.github.io/systemprompt-me/)**
+🔗 **[Try it now](https://systemprompt.me)**
 
 ---
 
