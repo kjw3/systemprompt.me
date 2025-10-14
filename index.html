@@ -1458,39 +1458,25 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         function parseAnalysis(analysis) {
             const sections = [];
             
-            // Split by lines and process
-            const lines = analysis.split('\n');
-            let currentSection = null;
+            // Split by markdown headers using regex
+            const parts = analysis.split(/^(#{2,3}\s+.+)$/gm);
             
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmed = line.trim();
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
                 
-                // Check if this is a header (## Title or ### Title)
-                if (trimmed.match(/^#{2,3}\s+/)) {
-                    // Save previous section if exists
-                    if (currentSection && currentSection.content.trim()) {
-                        currentSection.content = formatContent(currentSection.content);
-                        sections.push(currentSection);
-                    }
+                // Check if this part is a header
+                if (part.match(/^#{2,3}\s+/)) {
+                    const title = part.replace(/^#+\s+/, '').trim();
+                    const content = parts[i + 1] || '';
                     
-                    // Start new section
-                    const title = trimmed.replace(/^#+\s+/, '').trim();
-                    currentSection = {
+                    sections.push({
                         title: title,
-                        content: '',
+                        content: formatContent(content),
                         isSystemPrompt: title.toUpperCase().includes('SYSTEM PROMPT')
-                    };
-                } else if (currentSection) {
-                    // Add content to current section (preserve original line)
-                    currentSection.content += line + '\n';
+                    });
+                    
+                    i++; // Skip the content part since we already processed it
                 }
-            }
-            
-            // Add last section
-            if (currentSection && currentSection.content.trim()) {
-                currentSection.content = formatContent(currentSection.content);
-                sections.push(currentSection);
             }
             
             // Fallback if no sections found
