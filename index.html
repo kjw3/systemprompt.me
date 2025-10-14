@@ -394,9 +394,9 @@
             <div class="mt-6 text-center text-gray-600" id="analysis-message">
                 Processing your answers and generating insights...
             </div>
-            <div class="mt-4">
-                <button onclick="toggleThinking()" class="text-sm text-indigo-600 hover:text-indigo-800 underline" id="toggle-thinking-btn">
-                    Show AI Thinking
+            <div class="mt-4 text-center">
+                <button onclick="toggleThinking()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-sm" id="toggle-thinking-btn">
+                    👁️ Show AI Thinking
                 </button>
                 <div id="streaming-content" class="hidden mt-4 p-4 bg-gray-50 rounded-lg max-h-64 overflow-y-auto text-left text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-mono"></div>
             </div>
@@ -1184,7 +1184,7 @@ Do you understand the risks and want to continue?`;
             loadingModal.classList.remove('hidden');
             streamingContent.textContent = '';
             streamingContent.classList.add('hidden');
-            toggleBtn.textContent = 'Show AI Thinking';
+            toggleBtn.textContent = '👁️ Show AI Thinking';
             statusEl.textContent = 'Analyzing Your Responses';
             messageEl.textContent = 'Processing your answers and generating insights...';
 
@@ -1287,12 +1287,29 @@ Do you understand the risks and want to continue?`;
                                 if (content) {
                                     analysis += content;
                                     
-                                    // Check if we're in thinking mode
-                                    if (content.includes('<think>') || inThinkingMode) {
+                                    // Check if we're entering thinking mode
+                                    if (content.includes('<think>')) {
                                         inThinkingMode = true;
-                                        thinkingContent += content;
                                         statusEl.textContent = 'AI is thinking...';
                                         messageEl.textContent = 'Analyzing patterns and generating insights';
+                                    }
+                                    
+                                    // Check if we're exiting thinking mode (must check before adding to thinkingContent)
+                                    if (content.includes('</think>')) {
+                                        inThinkingMode = false;
+                                        thinkingContent += content;
+                                        statusEl.textContent = 'Generating Report';
+                                        messageEl.textContent = 'Formatting your personalized analysis...';
+                                        
+                                        // Update thinking display one last time if visible
+                                        if (!streamingContent.classList.contains('hidden')) {
+                                            streamingContent.textContent = thinkingContent.replace(/<\/?think>/gi, '').trim();
+                                            streamingContent.scrollTop = streamingContent.scrollHeight;
+                                        }
+                                    }
+                                    // If in thinking mode (and didn't just close), accumulate thinking content
+                                    else if (inThinkingMode) {
+                                        thinkingContent += content;
                                         
                                         // Update thinking display if visible
                                         if (!streamingContent.classList.contains('hidden')) {
@@ -1300,16 +1317,9 @@ Do you understand the risks and want to continue?`;
                                             streamingContent.scrollTop = streamingContent.scrollHeight;
                                         }
                                     }
-                                    
-                                    if (content.includes('</think>')) {
-                                        inThinkingMode = false;
-                                        statusEl.textContent = 'Generating Report';
-                                        messageEl.textContent = 'Formatting your personalized analysis...';
-                                    }
-                                    
-                                    // After thinking, show progress
-                                    if (!inThinkingMode && !content.includes('<think>')) {
-                                        // Update thinking display if visible
+                                    // After thinking, optionally show the output as it streams
+                                    else if (!content.includes('<think>')) {
+                                        // Update thinking display if visible (showing final output)
                                         if (!streamingContent.classList.contains('hidden')) {
                                             const displayText = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
                                             streamingContent.textContent = displayText;
@@ -1488,30 +1498,30 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         function formatContent(text) {
             if (!text) return '';
             
-            // Process the text line by line
+            // Simple text formatting - preserve all text, just add HTML structure
             const lines = text.split('\n');
             const formatted = [];
             
             for (let line of lines) {
                 const trimmed = line.trim();
-                if (!trimmed) continue;
+                if (!trimmed) {
+                    formatted.push('<br>'); // Preserve line breaks
+                    continue;
+                }
                 
-                // Bold text - escape HTML first, then apply markdown
-                let processed = trimmed
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Bold
+                // Apply bold markdown
+                let processed = trimmed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
                 
                 // Bullet points
                 if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                    formatted.push('<li class="ml-4">' + processed.substring(2) + '</li>');
+                    formatted.push('<li class="ml-4 mb-2">' + processed.substring(2) + '</li>');
                 }
                 // Numbered lists
-                else if (/^\d+\.\s/.test(trimmed)) {
+                else if (/^\d+\.\s*/.test(trimmed)) {
                     const match = trimmed.match(/^(\d+)\.\s*(.+)/);
                     if (match) {
-                        formatted.push(`<div class="mb-3"><strong>${match[1]}.</strong> ${match[2].replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</div>`);
+                        const content = match[2].replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                        formatted.push(`<div class="mb-3"><strong>${match[1]}.</strong> ${content}</div>`);
                     }
                 }
                 // Regular paragraphs
@@ -1530,10 +1540,10 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             
             if (streamingContent.classList.contains('hidden')) {
                 streamingContent.classList.remove('hidden');
-                toggleBtn.textContent = 'Hide AI Thinking';
+                toggleBtn.textContent = '👁️ Hide AI Thinking';
             } else {
                 streamingContent.classList.add('hidden');
-                toggleBtn.textContent = 'Show AI Thinking';
+                toggleBtn.textContent = '👁️ Show AI Thinking';
             }
         }
 
