@@ -125,7 +125,7 @@
                 </button>
                 <div class="text-sm opacity-75">
                     <p>🔒 Your data never leaves your browser</p>
-                    <p>Powered by Advanced AI</p>
+                    <p>⚠️ For self-learning only - AI can generate unexpected results</p>
                 </div>
                 <div class="mt-4">
                     <button onclick="showConfigModal()" class="text-white text-sm opacity-60 hover:opacity-100 transition underline">
@@ -258,7 +258,7 @@
                         <button type="button" onclick="setDirectAPI()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded transition">
                             Reset to Default
                         </button>
-                        <button type="button" onclick="setCORSProxy()" class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded transition">
+                        <button type="button" id="cors-proxy-btn" onclick="setCORSProxy()" class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded transition" style="display: none;">
                             🔧 Use CORS Proxy (localhost)
                         </button>
                     </div>
@@ -587,6 +587,12 @@
             const isLocalhost = window.location.hostname === 'localhost' || 
                                window.location.hostname === '127.0.0.1' ||
                                window.location.hostname === '';
+            
+            // Show CORS proxy button only on localhost
+            const corsProxyBtn = document.getElementById('cors-proxy-btn');
+            if (corsProxyBtn) {
+                corsProxyBtn.style.display = isLocalhost ? 'inline-block' : 'none';
+            }
             
             if (isLocalhost && appConfig.autoDetectLocalhost) {
                 // Only apply proxy if not already using one and not already saved
