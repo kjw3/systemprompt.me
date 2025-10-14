@@ -10,7 +10,7 @@
     <title>System Prompt Analyzer | Discover Your Mental Operating System</title>
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*; img-src 'self' data:; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*; img-src 'self' data:; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -20,6 +20,7 @@
     
     <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -1424,7 +1425,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             return prompt;
         }
 
-        // Results Display (SECURITY ENHANCED - XSS Protection)
+        // Results Display - Just render markdown as-is
         function displayResults(analysis) {
             document.getElementById('questionnaire').classList.add('hidden');
             document.getElementById('results').classList.remove('hidden');
@@ -1432,88 +1433,19 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
             const resultsContainer = document.getElementById('results-content');
             
-            // Parse the analysis (assuming markdown-like structure)
-            const sections = parseAnalysis(analysis);
+            // Convert markdown to HTML using marked.js
+            const htmlContent = marked.parse(analysis);
             
-            let html = '';
-            sections.forEach(section => {
-                // Escape title to prevent XSS
-                const safeTitle = SecurityUtils.escapeHTML(section.title);
-                // Sanitize content HTML
-                const safeContent = SecurityUtils.sanitizeHTML(section.content);
-                
-                html += `
-                    <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">${safeTitle}</h2>
-                        <div class="prose prose-lg text-gray-700 leading-relaxed">
-                            ${safeContent}
-                        </div>
+            // Wrap in a single card with prose styling
+            resultsContainer.innerHTML = `
+                <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                    <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                        ${htmlContent}
                     </div>
-                `;
-            });
-
-            resultsContainer.innerHTML = html;
+                </div>
+            `;
         }
 
-        function parseAnalysis(analysis) {
-            const sections = [];
-            
-            // Split by markdown headers using regex
-            const parts = analysis.split(/^(#{2,3}\s+.+)$/gm);
-            
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-                
-                // Check if this part is a header
-                if (part.match(/^#{2,3}\s+/)) {
-                    const title = part.replace(/^#+\s+/, '').trim();
-                    const content = parts[i + 1] || '';
-                    
-                    sections.push({
-                        title: title,
-                        content: formatContent(content),
-                        isSystemPrompt: title.toUpperCase().includes('SYSTEM PROMPT')
-                    });
-                    
-                    i++; // Skip the content part since we already processed it
-                }
-            }
-            
-            // Fallback if no sections found
-            if (sections.length === 0 && analysis.trim()) {
-                sections.push({
-                    title: 'Your Analysis',
-                    content: formatContent(analysis),
-                    isSystemPrompt: false
-                });
-            }
-            
-            return sections;
-        }
-
-        function formatContent(text) {
-            if (!text) return '';
-            
-            // Minimal processing - just convert markdown to HTML, preserve everything else
-            text = text.trim();
-            
-            // Remove horizontal rule separators (---)
-            text = text.replace(/^---+\s*$/gm, '');
-            
-            // Replace bold markdown
-            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            
-            // Convert line breaks to proper HTML
-            text = text.replace(/\n\n+/g, '</p><p class="mb-4">'); // Multiple newlines -> paragraph
-            text = text.replace(/\n/g, '<br>');
-            
-            // Wrap in paragraph if not already
-            if (!text.startsWith('<')) {
-                text = '<p class="mb-4">' + text + '</p>';
-            }
-            
-            return text;
-        }
 
         // Toggle thinking display
         function toggleThinking() {
