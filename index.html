@@ -1469,20 +1469,67 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
             const resultsContainer = document.getElementById('results-content');
             
-            // Extract closing note if it exists (usually after ---)
+            // Extract closing note if it exists
             let closingNote = '';
+            
+            // Method 1: Look for explicit --- separator
             const closingNoteSplit = analysis.split(/\n---+\n/);
             if (closingNoteSplit.length > 1) {
                 // Last part after --- is the closing note
                 closingNote = closingNoteSplit[closingNoteSplit.length - 1].trim();
                 // Remove it from analysis for section processing
                 analysis = closingNoteSplit.slice(0, -1).join('\n---\n');
-            } else {
-                // Try to detect closing note by common patterns
+            } 
+            // Method 2: Look for labeled closing notes
+            else {
                 const closingMatch = analysis.match(/\n\n((?:Closing Note|Final Note|Note)[:\s].+)/is);
                 if (closingMatch) {
                     closingNote = closingMatch[1].trim();
                     analysis = analysis.substring(0, closingMatch.index);
+                }
+            }
+            
+            // Method 3: If no closing note found yet, look for a final paragraph after all sections
+            // This catches unlabeled closing wisdom at the end
+            if (!closingNote) {
+                // Find the last ## section
+                const lastSectionIndex = analysis.lastIndexOf('\n## ');
+                if (lastSectionIndex !== -1) {
+                    // Get everything after the last section
+                    const afterLastSection = analysis.substring(lastSectionIndex);
+                    // Split into lines
+                    const lines = afterLastSection.split('\n');
+                    
+                    // Find where the section content ends (look for a blank line followed by non-list text)
+                    let foundClosing = false;
+                    let closingStartIndex = -1;
+                    
+                    for (let i = lines.length - 1; i >= 0; i--) {
+                        const line = lines[i].trim();
+                        // Check if this looks like a closing statement (not empty, not a list item, not too short)
+                        if (line && 
+                            !line.match(/^\d+\./) && 
+                            !line.match(/^[-*]/) && 
+                            !line.startsWith('#') &&
+                            line.length > 50) {
+                            closingStartIndex = i;
+                            foundClosing = true;
+                            break;
+                        }
+                    }
+                    
+                    // If we found what looks like a closing paragraph
+                    if (foundClosing && closingStartIndex > 2) {
+                        // Get the closing lines
+                        const closingLines = lines.slice(closingStartIndex);
+                        // Make sure there's a blank line before it
+                        if (lines[closingStartIndex - 1].trim() === '') {
+                            closingNote = closingLines.join('\n').trim();
+                            // Remove from analysis
+                            analysis = analysis.substring(0, lastSectionIndex) + 
+                                      lines.slice(0, closingStartIndex).join('\n');
+                        }
+                    }
                 }
             }
             
@@ -1541,7 +1588,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             if (closingNote) {
                 // Check if closing note starts with a label like "Closing Note:" or "Final Note:"
                 const noteLabelMatch = closingNote.match(/^((?:Closing|Final)\s+Note)[:\s]+(.+)/is);
-                let noteTitle = '';
+                let noteTitle = 'Final Note';
                 let noteContent = closingNote;
                 
                 if (noteLabelMatch) {
@@ -1552,7 +1599,7 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 const closingHtml = marked.parse(noteContent);
                 html += `
                     <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
-                        ${noteTitle ? `<h2 class="text-2xl font-bold text-gray-800 mb-4">${noteTitle}</h2>` : ''}
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">${noteTitle}</h2>
                         <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                             ${closingHtml}
                         </div>
