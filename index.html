@@ -143,6 +143,17 @@
         .result-card:hover {
             transform: translateX(4px);
         }
+        
+        /* List item spacing */
+        .prose ol li,
+        .prose ul li {
+            margin-bottom: 1rem;
+        }
+        
+        .prose ol li:last-child,
+        .prose ul li:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1458,6 +1469,23 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
             const resultsContainer = document.getElementById('results-content');
             
+            // Extract closing note if it exists (usually after ---)
+            let closingNote = '';
+            const closingNoteSplit = analysis.split(/\n---+\n/);
+            if (closingNoteSplit.length > 1) {
+                // Last part after --- is the closing note
+                closingNote = closingNoteSplit[closingNoteSplit.length - 1].trim();
+                // Remove it from analysis for section processing
+                analysis = closingNoteSplit.slice(0, -1).join('\n---\n');
+            } else {
+                // Try to detect closing note by common patterns
+                const closingMatch = analysis.match(/\n\n((?:Closing Note|Final Note|Note)[:\s].+)/is);
+                if (closingMatch) {
+                    closingNote = closingMatch[1].trim();
+                    analysis = analysis.substring(0, closingMatch.index);
+                }
+            }
+            
             // Split by ## headers (but keep the headers)
             const sections = [];
             const parts = analysis.split(/^## /gm);
@@ -1508,6 +1536,18 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                     `;
                 }
             });
+            
+            // Add closing note if found
+            if (closingNote) {
+                const closingHtml = marked.parse(closingNote);
+                html += `
+                    <div class="result-card bg-indigo-50 rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-600">
+                        <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed italic">
+                            ${closingHtml}
+                        </div>
+                    </div>
+                `;
+            }
             
             resultsContainer.innerHTML = html;
         }
