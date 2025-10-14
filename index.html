@@ -10,7 +10,7 @@
     <title>System Prompt Analyzer | Discover Your Mental Operating System</title>
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*; img-src 'self' data:; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*; img-src 'self' data:; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -20,8 +20,44 @@
     
     <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        @media print {
+            /* Hide everything except results */
+            body > *:not(#results) {
+                display: none !important;
+            }
+            
+            #results {
+                display: block !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            
+            /* Hide buttons in print */
+            button, .no-print {
+                display: none !important;
+            }
+            
+            /* Ensure results are visible */
+            .result-card {
+                page-break-inside: avoid;
+                margin: 20px 0;
+                padding: 20px;
+                border-left: 4px solid #6366f1;
+                background: #f9fafb;
+            }
+            
+            /* Clean typography */
+            .prose {
+                color: #374151;
+            }
+            
+            h2 {
+                color: #4338ca;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         * {
@@ -1389,121 +1425,9 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         }
 
         // Actions
-        async function downloadResults() {
-            const saved = localStorage.getItem('systemPromptResults');
-            if (!saved) {
-                alert('No results found to download.');
-                return;
-            }
-
-            const results = JSON.parse(saved);
-            const date = new Date(results.timestamp).toLocaleDateString();
-            
-            // Parse the analysis to get sections
-            const sections = parseAnalysis(results.analysis);
-            
-            console.log('Generating PDF with', sections.length, 'sections');
-            
-            // Show loading overlay
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                color: white;
-                font-size: 18px;
-            `;
-            loadingOverlay.innerHTML = '<div>Generating PDF...</div>';
-            document.body.appendChild(loadingOverlay);
-            
-            // Create a temporary container for PDF generation with inline styles
-            // Make it VISIBLE but overlaid by the loading screen
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 800px;
-                padding: 40px;
-                background-color: white;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                color: #333;
-                line-height: 1.6;
-                z-index: 9999;
-                overflow: hidden;
-            `;
-            
-            // Build the PDF content with inline styles directly from parsed data
-            let htmlContent = `
-                <div style="margin-bottom: 30px;">
-                    <h1 style="color: #6366f1; font-size: 32px; margin-bottom: 10px; font-weight: bold;">🧠 System Prompt Analysis</h1>
-                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 30px;">Generated: ${date}</div>
-                </div>
-            `;
-            
-            // Add each section with inline styles
-            sections.forEach(section => {
-                htmlContent += `
-                    <div style="background: #f9fafb; padding: 25px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #6366f1; page-break-inside: avoid;">
-                        <h2 style="color: #4338ca; font-size: 24px; margin-top: 0; margin-bottom: 15px; font-weight: bold;">${section.title}</h2>
-                        <div style="color: #374151; font-size: 16px; line-height: 1.8;">${section.content}</div>
-                    </div>
-                `;
-            });
-            
-            pdfContainer.innerHTML = htmlContent;
-            document.body.appendChild(pdfContainer);
-            
-            // Wait a tiny bit for rendering
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Configure PDF options
-            const opt = {
-                margin: [0.5, 0.5, 0.5, 0.5],
-                filename: `system-prompt-analysis-${Date.now()}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2,
-                    useCORS: true,
-                    letterRendering: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    windowWidth: 800
-                },
-                jsPDF: { 
-                    unit: 'in', 
-                    format: 'letter', 
-                    orientation: 'portrait' 
-                },
-                pagebreak: { 
-                    mode: ['avoid-all', 'css', 'legacy'] 
-                }
-            };
-            
-            try {
-                console.log('Starting PDF generation...');
-                // Generate and download PDF
-                await html2pdf().set(opt).from(pdfContainer).save();
-                console.log('PDF generated successfully');
-            } catch (error) {
-                console.error('PDF generation error:', error);
-                alert('Failed to generate PDF: ' + error.message);
-            } finally {
-                // Clean up
-                if (pdfContainer.parentNode) {
-                    document.body.removeChild(pdfContainer);
-                }
-                if (loadingOverlay.parentNode) {
-                    document.body.removeChild(loadingOverlay);
-                }
-            }
+        function printResults() {
+            // Simple print - browser handles everything including "Save as PDF"
+            window.print();
         }
 
         function startOver() {
