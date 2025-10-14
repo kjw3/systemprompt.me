@@ -1502,13 +1502,6 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 });
             }
             
-            // Apply special styling to system prompt
-            sections.forEach(section => {
-                if (section.isSystemPrompt) {
-                    section.content = `<div class="text-lg font-medium italic text-indigo-900 bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-600">${section.content}</div>`;
-                }
-            });
-
             return sections;
         }
 
@@ -1518,11 +1511,14 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
             // Minimal processing - just convert markdown to HTML, preserve everything else
             text = text.trim();
             
+            // Remove horizontal rule separators (---)
+            text = text.replace(/^---+\s*$/gm, '');
+            
             // Replace bold markdown
             text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             
             // Convert line breaks to proper HTML
-            text = text.replace(/\n\n/g, '</p><p class="mb-4">');
+            text = text.replace(/\n\n+/g, '</p><p class="mb-4">'); // Multiple newlines -> paragraph
             text = text.replace(/\n/g, '<br>');
             
             // Wrap in paragraph if not already
