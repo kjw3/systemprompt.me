@@ -1458,39 +1458,56 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         function parseAnalysis(analysis) {
             const sections = [];
             
-            // Split by markdown headers (## or ###)
-            const headerRegex = /^#+\s+(.+)$/gm;
-            const matches = [...analysis.matchAll(headerRegex)];
+            // Split by lines and process
+            const lines = analysis.split('\n');
+            let currentSection = null;
             
-            if (matches.length === 0) {
-                // No headers found - return as single section
-                return [{
-                    title: 'Your Analysis',
-                    content: formatContent(analysis)
-                }];
-            }
-            
-            // Process each section
-            for (let i = 0; i < matches.length; i++) {
-                const match = matches[i];
-                const title = match[1].trim();
-                const startPos = match.index + match[0].length;
-                const endPos = matches[i + 1] ? matches[i + 1].index : analysis.length;
-                let content = analysis.substring(startPos, endPos).trim();
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmed = line.trim();
                 
-                // Special handling for "YOUR SYSTEM PROMPT" section
-                if (title.toUpperCase().includes('YOUR SYSTEM PROMPT') || title.toUpperCase().includes('SYSTEM PROMPT')) {
-                    sections.push({
-                        title: 'Your System Prompt',
-                        content: `<div class="text-lg font-medium italic text-indigo-900 bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-600">${formatContent(content)}</div>`
-                    });
-                } else {
-                    sections.push({
+                // Check if this is a header (## Title or ### Title)
+                if (trimmed.match(/^#{2,3}\s+/)) {
+                    // Save previous section if exists
+                    if (currentSection && currentSection.content.trim()) {
+                        currentSection.content = formatContent(currentSection.content);
+                        sections.push(currentSection);
+                    }
+                    
+                    // Start new section
+                    const title = trimmed.replace(/^#+\s+/, '').trim();
+                    currentSection = {
                         title: title,
-                        content: formatContent(content)
-                    });
+                        content: '',
+                        isSystemPrompt: title.toUpperCase().includes('SYSTEM PROMPT')
+                    };
+                } else if (currentSection) {
+                    // Add content to current section (preserve original line)
+                    currentSection.content += line + '\n';
                 }
             }
+            
+            // Add last section
+            if (currentSection && currentSection.content.trim()) {
+                currentSection.content = formatContent(currentSection.content);
+                sections.push(currentSection);
+            }
+            
+            // Fallback if no sections found
+            if (sections.length === 0 && analysis.trim()) {
+                sections.push({
+                    title: 'Your Analysis',
+                    content: formatContent(analysis),
+                    isSystemPrompt: false
+                });
+            }
+            
+            // Apply special styling to system prompt
+            sections.forEach(section => {
+                if (section.isSystemPrompt) {
+                    section.content = `<div class="text-lg font-medium italic text-indigo-900 bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-600">${section.content}</div>`;
+                }
+            });
 
             return sections;
         }
@@ -1498,39 +1515,22 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
         function formatContent(text) {
             if (!text) return '';
             
-            // Simple text formatting - preserve all text, just add HTML structure
-            const lines = text.split('\n');
-            const formatted = [];
+            // Minimal processing - just convert markdown to HTML, preserve everything else
+            text = text.trim();
             
-            for (let line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) {
-                    formatted.push('<br>'); // Preserve line breaks
-                    continue;
-                }
-                
-                // Apply bold markdown
-                let processed = trimmed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                
-                // Bullet points
-                if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                    formatted.push('<li class="ml-4 mb-2">' + processed.substring(2) + '</li>');
-                }
-                // Numbered lists
-                else if (/^\d+\.\s*/.test(trimmed)) {
-                    const match = trimmed.match(/^(\d+)\.\s*(.+)/);
-                    if (match) {
-                        const content = match[2].replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                        formatted.push(`<div class="mb-3"><strong>${match[1]}.</strong> ${content}</div>`);
-                    }
-                }
-                // Regular paragraphs
-                else {
-                    formatted.push('<p class="mb-3">' + processed + '</p>');
-                }
+            // Replace bold markdown
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert line breaks to proper HTML
+            text = text.replace(/\n\n/g, '</p><p class="mb-4">');
+            text = text.replace(/\n/g, '<br>');
+            
+            // Wrap in paragraph if not already
+            if (!text.startsWith('<')) {
+                text = '<p class="mb-4">' + text + '</p>';
             }
             
-            return formatted.join('\n');
+            return text;
         }
 
         // Toggle thinking display
