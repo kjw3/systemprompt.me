@@ -508,14 +508,15 @@
         // APPLICATION CODE
         // ============================================================================
         
-        // Get config from config.js or use fallback defaults
-        const appConfig = window.APP_CONFIG || {
-            defaultBaseURL: 'https://integrate.api.nvidia.com/v1',
+        // Application configuration (no external config.js needed)
+        const appConfig = {
+            // Backend proxy URL - API key is stored securely in Cloudflare Worker
+            defaultBaseURL: 'https://systemprompt.me/api',
             defaultModel: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
             defaultApiKey: '',
-            adminApiKey: '',
+            adminApiKey: '', // Not used - Worker handles authentication
             corsProxyURL: 'https://corsproxy.io/?',
-            autoDetectLocalhost: true
+            autoDetectLocalhost: false
         };
 
         // State Management
@@ -766,8 +767,10 @@ Do you understand the risks and want to continue?`;
             const model = document.getElementById('model-name').value.trim() || appConfig.defaultModel;
             const apiKey = document.getElementById('api-key').value.trim() || appConfig.adminApiKey || '';
 
-            if (!apiKey) {
-                showTestStatus('error', '❌ Please enter an API key first');
+            // Check if using Worker endpoint (no API key needed) or custom endpoint (API key required)
+            const isUsingWorker = baseURL.includes('systemprompt.me/api');
+            if (!isUsingWorker && !apiKey) {
+                showTestStatus('error', '❌ Please enter an API key for custom endpoints');
                 return;
             }
 
@@ -797,12 +800,17 @@ Do you understand the risks and want to continue?`;
 
                 secureLog('Request body:', JSON.stringify(requestBody, null, 2));
 
+                // Build headers - only include Authorization if not using Worker
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (!isUsingWorker && apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+
                 const response = await fetch(`${baseURL}/chat/completions`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: headers,
                     body: JSON.stringify(requestBody)
                 }).catch(err => {
                     secureLog('Fetch error details:', err);
@@ -895,25 +903,30 @@ Do you understand the risks and want to continue?`;
 
         // New function to handle start button
         function startDiscovery() {
-            // Check if we have a default key or user's custom key
-            const hasDefaultKey = appConfig.adminApiKey && appConfig.adminApiKey.length > 0;
-            const hasCustomKey = sessionStorage.getItem('systemPromptApiKey');
+            // With Worker proxy, no API key needed - just start!
+            const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
             
-            if (hasDefaultKey || hasCustomKey) {
-                // Auto-start with available key
-                if (!state.config.apiKey) {
-                    state.config.apiKey = hasCustomKey || appConfig.adminApiKey;
-                }
+            if (isUsingWorker) {
+                // Worker handles authentication - start immediately
                 startQuestionnaire();
             } else {
-                // No key available, show config modal
-                showConfigModal();
+                // Custom endpoint - check if user has provided their own key
+                const hasCustomKey = sessionStorage.getItem('systemPromptApiKey');
+                if (hasCustomKey) {
+                    state.config.apiKey = hasCustomKey;
+                    startQuestionnaire();
+                } else {
+                    // Need key for custom endpoint
+                    showConfigModal();
+                }
             }
         }
 
         // Questionnaire
         function startQuestionnaire() {
-            if (!state.config.apiKey) {
+            // Check if using Worker (no key needed) or custom endpoint (key required)
+            const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
+            if (!isUsingWorker && !state.config.apiKey) {
                 showConfigModal();
                 return;
             }
@@ -1120,13 +1133,19 @@ Do you understand the risks and want to continue?`;
                 secureLog('Making API request to:', `${state.config.baseURL}/chat/completions`);
                 secureLog('Using model:', state.config.model);
                 
+                // Build headers - only include Authorization if not using Worker
+                const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                };
+                if (!isUsingWorker && state.config.apiKey) {
+                    headers['Authorization'] = `Bearer ${state.config.apiKey}`;
+                }
+
                 const response = await fetch(`${state.config.baseURL}/chat/completions`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.config.apiKey}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: headers,
                     body: JSON.stringify({
                         model: state.config.model,
                         messages: [
