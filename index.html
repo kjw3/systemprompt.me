@@ -1480,12 +1480,14 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                 // Remove it from analysis for section processing
                 analysis = closingNoteSplit.slice(0, -1).join('\n---\n');
             } 
-            // Method 2: Look for labeled closing notes
+            // Method 2: Look for labeled closing notes  
             else {
-                const closingMatch = analysis.match(/\n\n((?:Closing Note|Final Note|Note)[:\s].+)/is);
+                // Match Note: or Closing Note: or Final Note: that comes after a numbered list item
+                const closingMatch = analysis.match(/\n(\d+\..+)\n+((?:Closing\s+)?(?:Final\s+)?Note[:\s].+)/is);
                 if (closingMatch) {
-                    closingNote = closingMatch[1].trim();
-                    analysis = analysis.substring(0, closingMatch.index);
+                    // Found a note after a numbered list
+                    closingNote = closingMatch[2].trim();
+                    analysis = analysis.substring(0, closingMatch.index + closingMatch[1].length + 1);
                 }
             }
             
