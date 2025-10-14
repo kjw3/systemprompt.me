@@ -51,17 +51,54 @@ function cleanupRateLimits() {
 
 export default {
   async fetch(request, env) {
-    // CORS headers
+    // Allowed origins for requests
+    const ALLOWED_ORIGINS = [
+      'https://systemprompt.me',
+      'https://www.systemprompt.me',
+      'https://kjw3.github.io',
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:3000'
+    ];
+
+    // Get origin from request
+    const origin = request.headers.get('Origin');
+    const referer = request.headers.get('Referer');
+    
+    // Validate origin
+    let isValidOrigin = false;
+    if (origin) {
+      isValidOrigin = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed));
+    } else if (referer) {
+      // Fallback to referer check if no origin header
+      isValidOrigin = ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed));
+    }
+
+    // CORS headers - set specific origin if valid
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': isValidOrigin && origin ? origin : 'https://systemprompt.me',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin'
     };
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
+    }
+
+    // Block requests from invalid origins
+    if (!isValidOrigin) {
+      console.warn('Blocked request from invalid origin:', origin || referer || 'unknown');
+      return new Response(JSON.stringify({ 
+        error: 'Forbidden',
+        message: 'Requests are only allowed from systemprompt.me'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Only allow POST requests
