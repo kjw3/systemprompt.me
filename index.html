@@ -386,10 +386,12 @@
 
     <!-- Loading Modal -->
     <div id="loading-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <h3 class="text-xl font-semibold text-gray-800 mb-2">Analyzing Your Responses</h3>
-            <p class="text-gray-600">This may take a moment...</p>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8">
+            <div class="flex items-center justify-center mb-4">
+                <div class="spinner mr-3"></div>
+                <h3 class="text-xl font-semibold text-gray-800">Analyzing Your Responses</h3>
+            </div>
+            <div id="streaming-content" class="mt-6 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto text-left text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"></div>
         </div>
     </div>
 
@@ -1164,7 +1166,11 @@ Do you understand the risks and want to continue?`;
                 return;
             }
 
-            document.getElementById('loading-modal').classList.remove('hidden');
+            const loadingModal = document.getElementById('loading-modal');
+            const streamingContent = document.getElementById('streaming-content');
+            
+            loadingModal.classList.remove('hidden');
+            streamingContent.textContent = ''; // Clear previous content
 
             try {
                 const metaPrompt = buildMetaPrompt();
@@ -1176,7 +1182,7 @@ Do you understand the risks and want to continue?`;
                 const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
                 const headers = {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'text/event-stream'
                 };
                 if (!isUsingWorker && state.config.apiKey) {
                     headers['Authorization'] = `Bearer ${state.config.apiKey}`;
@@ -1199,7 +1205,7 @@ Do you understand the risks and want to continue?`;
                         ],
                         temperature: 0.7,
                         max_tokens: 4000,  // Increased for full analysis
-                        stream: false
+                        stream: true
                     })
                 });
 
@@ -1227,16 +1233,48 @@ Do you understand the risks and want to continue?`;
                     throw new Error(errorMessage);
                 }
 
-                const data = await response.json();
-                secureLog('API Response received');
+                // Handle streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let analysis = '';
                 
-                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                    throw new Error('Invalid response format from API');
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            
+                            if (data === '[DONE]') {
+                                continue;
+                            }
+                            
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content;
+                                
+                                if (content) {
+                                    analysis += content;
+                                    // Update the streaming display (remove <think> tags for display)
+                                    const displayText = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                                    streamingContent.textContent = displayText;
+                                    // Auto-scroll to bottom
+                                    streamingContent.scrollTop = streamingContent.scrollHeight;
+                                }
+                            } catch (e) {
+                                // Ignore parse errors for incomplete chunks
+                            }
+                        }
+                    }
                 }
                 
-                let analysis = data.choices[0].message.content;
+                secureLog('API Response received (streaming complete)');
                 
-                // Strip any <think> tags that the model might add
+                // Strip any <think> tags from final analysis
                 analysis = analysis.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
                 
                 // Check if we got a valid response
