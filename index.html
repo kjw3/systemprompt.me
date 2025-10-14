@@ -1399,44 +1399,40 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
         function parseAnalysis(analysis) {
             const sections = [];
-            const lines = analysis.split('\n');
-            let currentSection = null;
-
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                
-                // Check for section headers (## Title)
-                if (trimmed.startsWith('##')) {
-                    if (currentSection) {
-                        sections.push(currentSection);
-                    }
-                    currentSection = {
-                        title: trimmed.replace(/^#+\s*/, ''),
-                        content: ''
-                    };
-                } else if (currentSection && trimmed) {
-                    // Add content to current section
-                    currentSection.content += line + '\n';
-                }
-            });
-
-            // Add last section
-            if (currentSection) {
-                sections.push(currentSection);
+            
+            // Split by markdown headers (## or ###)
+            const headerRegex = /^#+\s+(.+)$/gm;
+            const matches = [...analysis.matchAll(headerRegex)];
+            
+            if (matches.length === 0) {
+                // No headers found - return as single section
+                return [{
+                    title: 'Your Analysis',
+                    content: formatContent(analysis)
+                }];
             }
             
-            // Fallback: if no sections found, create a single section with all content
-            if (sections.length === 0 && analysis.trim()) {
-                sections.push({
-                    title: 'Your Analysis',
-                    content: analysis
-                });
+            // Process each section
+            for (let i = 0; i < matches.length; i++) {
+                const match = matches[i];
+                const title = match[1].trim();
+                const startPos = match.index + match[0].length;
+                const endPos = matches[i + 1] ? matches[i + 1].index : analysis.length;
+                let content = analysis.substring(startPos, endPos).trim();
+                
+                // Special handling for "YOUR SYSTEM PROMPT" section
+                if (title.toUpperCase().includes('YOUR SYSTEM PROMPT') || title.toUpperCase().includes('SYSTEM PROMPT')) {
+                    sections.push({
+                        title: 'Your System Prompt',
+                        content: `<div class="text-lg font-medium italic text-indigo-900 bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-600">${formatContent(content)}</div>`
+                    });
+                } else {
+                    sections.push({
+                        title: title,
+                        content: formatContent(content)
+                    });
+                }
             }
-
-            // Format content (convert to HTML)
-            sections.forEach(section => {
-                section.content = formatContent(section.content);
-            });
 
             return sections;
         }
