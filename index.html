@@ -1449,7 +1449,7 @@ Below are their responses to a series of introspective questions:
             }
 
             prompt += `
-Based on these responses, please provide a comprehensive analysis structured as follows:
+Based on these responses, please provide a comprehensive analysis structured EXACTLY as follows. Use these exact section headers:
 
 ## YOUR SYSTEM PROMPT
 Write this in the style of an AI system prompt, starting with "You are...". Synthesize their responses into 2-3 sentences that describe the core operating principles, beliefs, and assumptions that drive their behavior and decisions. Format it as if programming their mental operating system.
@@ -1464,9 +1464,12 @@ Identify 2-4 thinking patterns or cognitive biases evident in their responses (e
 Highlight 3-4 positive aspects of their mental framework - areas of self-awareness, resilience, or healthy perspectives.
 
 ## GROWTH OPPORTUNITIES
-Provide 3-5 specific, actionable recommendations for how they can evolve their mental operating system. These should be concrete practices or mindset shifts, not generic advice.
+Provide EXACTLY 5 specific, actionable recommendations for how they can evolve their mental operating system. Number them 1-5. These should be concrete practices or mindset shifts, not generic advice.
 
-Be empathetic but honest. Focus on patterns across multiple responses. Make insights specific to their actual words, not generic psychological advice. Use a warm, direct tone as if speaking to them personally.`;
+## FINAL NOTE
+Write 2-3 sentences of empathetic encouragement that acknowledges their journey and the work they've already done. Speak directly to them with warmth and affirmation.
+
+IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:" or any other labels. Focus on patterns across their actual responses. Make insights specific to their words, not generic psychological advice.`;
 
             return prompt;
         }
@@ -1479,64 +1482,8 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
 
             const resultsContainer = document.getElementById('results-content');
             
-            // Extract closing note if it exists
-            // Strategy: Look for a final paragraph after all ## sections
-            let closingNote = '';
-            
-            // Split the analysis into sections by ## headers
-            const sectionParts = analysis.split(/^## /gm);
-            
-            if (sectionParts.length > 1) {
-                // Get the last section (usually GROWTH OPPORTUNITIES)
-                const lastSectionFull = sectionParts[sectionParts.length - 1];
-                const lines = lastSectionFull.split('\n');
-                
-                // Find the last numbered list item
-                let lastListItemIndex = -1;
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].trim().match(/^\d+\./)) {
-                        lastListItemIndex = i;
-                    }
-                }
-                
-                // If we found list items, look for content after them
-                if (lastListItemIndex !== -1) {
-                    // Look for a substantial paragraph after the last list item
-                    let closingStartIndex = -1;
-                    
-                    for (let i = lastListItemIndex + 1; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        
-                        // Skip empty lines
-                        if (!line) continue;
-                        
-                        // If this line is substantial and not a list item, it's likely the closing note
-                        if (line.length > 50 && !line.match(/^\d+\./) && !line.match(/^[-*]/)) {
-                            closingStartIndex = i;
-                            break;
-                        }
-                    }
-                    
-                    // Extract the closing note
-                    if (closingStartIndex !== -1) {
-                        // Get all lines from closing start to end
-                        const closingLines = [];
-                        for (let i = closingStartIndex; i < lines.length; i++) {
-                            closingLines.push(lines[i]);
-                        }
-                        closingNote = closingLines.join('\n').trim();
-                        
-                        // Rebuild the last section without the closing note
-                        const sectionWithoutClosing = lines.slice(0, closingStartIndex).join('\n');
-                        sectionParts[sectionParts.length - 1] = sectionWithoutClosing;
-                        
-                        // Rebuild the analysis
-                        analysis = sectionParts.join('## ');
-                    }
-                }
-            }
-            
             // Split by ## headers (but keep the headers)
+            // The AI now provides consistent structure with explicit ## FINAL NOTE section
             const sections = [];
             const parts = analysis.split(/^## /gm);
             
@@ -1586,29 +1533,6 @@ Be empathetic but honest. Focus on patterns across multiple responses. Make insi
                     `;
                 }
             });
-            
-            // Add closing note if found - as a regular card with a title
-            if (closingNote) {
-                // Check if closing note starts with a label like "Closing Note:" or "Final Note:"
-                const noteLabelMatch = closingNote.match(/^((?:Closing|Final)\s+Note)[:\s]+(.+)/is);
-                let noteTitle = 'Final Note';
-                let noteContent = closingNote;
-                
-                if (noteLabelMatch) {
-                    noteTitle = noteLabelMatch[1];
-                    noteContent = noteLabelMatch[2];
-                }
-                
-                const closingHtml = marked.parse(noteContent);
-                html += `
-                    <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">${noteTitle}</h2>
-                        <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                            ${closingHtml}
-                        </div>
-                    </div>
-                `;
-            }
             
             resultsContainer.innerHTML = html;
         }
