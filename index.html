@@ -470,8 +470,8 @@
 
         // Input Sanitization for LLM Prompts
         const InputSanitizer = {
-            MAX_ANSWER_LENGTH: 5000,
-            MAX_TOTAL_LENGTH: 50000,
+            MAX_ANSWER_LENGTH: 2000,  // 2K per answer = 20K max for all 10
+            MAX_TOTAL_LENGTH: 25000,  // Total safety limit (with overhead ~30K tokens input)
             
             INJECTION_PATTERNS: [
                 /ignore\s+(all\s+)?previous\s+(instructions?|rules?)/i,
@@ -1417,6 +1417,16 @@ Do you understand the risks and want to continue?`;
         }
 
         function buildMetaPrompt() {
+            // Token budget calculation:
+            // - Model: Llama 3.3 Nemotron (128K context window)
+            // - Input budget: ~30K tokens (leaves 98K for output + safety margin)
+            // - MAX_TOTAL_LENGTH: 25K chars = ~6,250 tokens (user answers)
+            // - Meta-prompt: ~2K chars = ~500 tokens
+            // - Questions: ~1K chars = ~250 tokens
+            // - Total input: ~7,000 tokens
+            // - Output requested: 4,000 tokens
+            // - Grand total: ~11,000 tokens (8.5% of context window)
+            
             let prompt = `I need you to analyze a person's responses to discover their internal "system prompt" - the underlying beliefs, biases, and mental blockers that shape their worldview and decisions.
 
 Below are their responses to a series of introspective questions:
