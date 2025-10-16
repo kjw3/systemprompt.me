@@ -1945,13 +1945,14 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             }
         }
 
-        // Store optimized versions globally
+        // Store optimized versions globally with cache validation
         let optimizedVersions = {
             chatgpt: '',
-            claude: ''
+            claude: '',
+            analysisHash: null
         };
 
-        // Copy for AI Chat - AI-powered optimization
+        // Copy for AI Chat - AI-powered optimization with caching
         async function copyForAI() {
             const results = localStorage.getItem('systemPromptResults');
             if (!results) {
@@ -1962,6 +1963,13 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             const data = JSON.parse(results);
             let analysis = data.analysis;
             
+            // Check if we already have cached optimized versions for this analysis
+            if (optimizedVersions.chatgpt && optimizedVersions.claude && optimizedVersions.analysisHash === hashString(analysis)) {
+                // Use cached versions
+                showFormatSelectionModal();
+                return;
+            }
+            
             // Show loading modal
             document.getElementById('ai-optimize-loading').classList.remove('hidden');
             
@@ -1969,9 +1977,10 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                 // Call API to optimize the analysis
                 const optimized = await optimizeForAIPlatforms(analysis);
                 
-                // Store the optimized versions
+                // Store the optimized versions with hash for cache validation
                 optimizedVersions.chatgpt = optimized.chatgpt;
                 optimizedVersions.claude = optimized.claude;
+                optimizedVersions.analysisHash = hashString(analysis);
                 
                 // Hide loading modal
                 document.getElementById('ai-optimize-loading').classList.add('hidden');
@@ -1986,6 +1995,17 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             }
         }
         
+        // Simple hash function for cache validation
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash;
+        }
+        
         async function optimizeForAIPlatforms(analysis) {
             // Rate limiting check
             const rateCheck = apiRateLimiter.check();
@@ -1993,32 +2013,39 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                 throw new Error(`Rate limit exceeded. Please wait ${rateCheck.resetIn} seconds.`);
             }
             
-            const optimizationPrompt = `You are an expert at condensing psychological analyses for use in AI assistant custom instructions. I need you to create TWO optimized versions of this analysis:
+            const optimizationPrompt = `You are an expert at condensing psychological analyses for use in AI assistant custom instructions. I need you to create TWO optimized versions of this analysis.
 
-VERSION 1 - CHATGPT CUSTOM INSTRUCTIONS (CRITICAL: MUST BE UNDER 1500 CHARACTERS):
+VERSION 1 - CHATGPT CUSTOM INSTRUCTIONS:
+- CRITICAL: MUST be under 1500 characters (aim for 1300-1400 to be safe)
 - Ultra-condensed while preserving core essence
-- Include: brief system prompt, top 2-3 blockers, top 2 biases
-- Clear, directive format for AI to understand user
-- Count characters carefully and stay well under 1500
+- Include: brief system prompt (2-3 sentences), top 2-3 blockers, top 2 biases, directive for AI
+- Clear, actionable format
+- DO NOT include character counts or meta-information in the output
 
-VERSION 2 - CLAUDE/FULL VERSION (TARGET: 3000-4000 CHARACTERS):
-- More detailed but still concise
-- Include: system prompt, key blockers, biases, strengths, growth areas
-- Well-formatted for Claude Projects or any AI chat
-- Preserve more nuance and specifics
+VERSION 2 - CLAUDE/FULL VERSION:
+- CRITICAL: MUST be 3500-4500 characters (this is longer than you think - be detailed!)
+- Include ALL of: full system prompt (detailed paragraph), ALL 4 blockers with explanations, ALL 4 biases with context, ALL 4 strengths with examples, ALL 5 growth opportunities with specific tactics, final encouragement note
+- Each section should be substantial with concrete details
+- Use numbered lists for clarity
+- DO NOT include character counts or meta-information in the output
 
-CRITICAL REQUIREMENTS:
-1. Start each version with a clear marker: "=== CHATGPT VERSION ===" and "=== CLAUDE VERSION ==="
-2. Focus on actionable insights for the AI to understand how to interact
-3. Remove markdown formatting (use plain text)
-4. Remove question references like (Q1, Q7)
-5. Be specific and concrete, not generic
+FORMATTING REQUIREMENTS (BOTH VERSIONS):
+1. Start each version with ONLY the marker: "=== CHATGPT VERSION ===" and "=== CLAUDE VERSION ==="
+2. Use plain text (no markdown: no **, no *, no #)
+3. Remove ALL question references like (Q1, Q7)
+4. Use clear section headers like "System prompt:", "Key blockers:", etc.
+5. Number items as 1), 2), 3) for clarity
+6. DO NOT ADD CHARACTER COUNTS - the text should end naturally without meta-commentary
 
 HERE IS THE FULL ANALYSIS TO OPTIMIZE:
 
 ${analysis}
 
-Remember: ChatGPT version MUST be under 1500 characters! Claude version should be 3000-4000 characters. Start each with the clear markers.`;
+IMPORTANT REMINDERS:
+- ChatGPT version: under 1500 chars, condensed, actionable
+- Claude version: 3500-4500 chars, detailed, ALL sections included with substantial content
+- NO character counts in the output
+- Start each with only the === marker`;
 
             const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
             const headers = {
@@ -2060,9 +2087,19 @@ Remember: ChatGPT version MUST be under 1500 characters! Claude version should b
             const chatgptMatch = optimizedText.match(/=== CHATGPT VERSION ===\s*([\s\S]*?)(?:=== CLAUDE VERSION ===|$)/i);
             const claudeMatch = optimizedText.match(/=== CLAUDE VERSION ===\s*([\s\S]*?)$/i);
             
+            // Clean up the extracted text - remove character counts and meta-info
+            const cleanVersion = (text) => {
+                return text
+                    .replace(/\(Characters?:?\s*\d+[,\d]*\)/gi, '')  // Remove (Characters: 1489)
+                    .replace(/\(Char count:?\s*\d+[,\d]*\)/gi, '')   // Remove (Char count: 1489)
+                    .replace(/\[?\d+[,\d]*\s*characters?\]?/gi, '')  // Remove [1489 characters]
+                    .replace(/Character count:?\s*\d+[,\d]*/gi, '')  // Remove Character count: 1489
+                    .trim();
+            };
+            
             return {
-                chatgpt: chatgptMatch ? chatgptMatch[1].trim() : optimizedText.substring(0, 1500),
-                claude: claudeMatch ? claudeMatch[1].trim() : optimizedText
+                chatgpt: chatgptMatch ? cleanVersion(chatgptMatch[1]) : cleanVersion(optimizedText.substring(0, 1500)),
+                claude: claudeMatch ? cleanVersion(claudeMatch[1]) : cleanVersion(optimizedText)
             };
         }
         
@@ -2127,6 +2164,13 @@ Remember: ChatGPT version MUST be under 1500 characters! Claude version should b
                 state.answers = [];
                 saveProgress();
                 
+                // Clear cached AI optimizations
+                optimizedVersions = {
+                    chatgpt: '',
+                    claude: '',
+                    analysisHash: null
+                };
+                
                 document.getElementById('results').classList.add('hidden');
                 document.getElementById('landing').classList.remove('hidden');
             }
@@ -2142,6 +2186,13 @@ Remember: ChatGPT version MUST be under 1500 characters! Claude version should b
                 
                 // Clear sessionStorage
                 sessionStorage.removeItem('systemPromptApiKey');
+                
+                // Clear cached AI optimizations
+                optimizedVersions = {
+                    chatgpt: '',
+                    claude: '',
+                    analysisHash: null
+                };
                 
                 state.currentQuestionIndex = 0;
                 state.answers = [];
