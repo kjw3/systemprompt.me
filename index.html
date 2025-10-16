@@ -474,11 +474,8 @@
                 <button onclick="printResults()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-md hover:shadow-lg">
                     🖨️ Print / Save PDF
                 </button>
-                <button onclick="startOver()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md hover:shadow-lg">
-                    🔄 Start Over
-                </button>
-                <button onclick="clearAllData()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-md hover:shadow-lg">
-                    🗑️ Clear All Data
+                <button onclick="startNewAnalysis()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md hover:shadow-lg">
+                    🔄 Start New Analysis
                 </button>
             </div>
             
@@ -2207,27 +2204,8 @@ IMPORTANT REMINDERS:
             window.print();
         }
 
-        function startOver() {
-            if (confirm('Start a new analysis? Your current progress will be saved but you\'ll begin a new questionnaire.')) {
-                state.currentQuestionIndex = 0;
-                state.answers = [];
-                saveProgress();
-                
-                // Clear cached AI optimizations
-                optimizedVersions = {
-                    quick: '',
-                    chatgpt: '',
-                    claude: '',
-                    analysisHash: null
-                };
-                
-                document.getElementById('results').classList.add('hidden');
-                document.getElementById('landing').classList.remove('hidden');
-            }
-        }
-
-        function clearAllData() {
-            if (confirm('⚠️ This will delete ALL stored data including your API key, responses, and results. This cannot be undone. Continue?')) {
+        function startNewAnalysis() {
+            if (confirm('Start a new analysis? This will clear your current responses and results. Continue?')) {
                 // Clear localStorage
                 localStorage.removeItem('systemPromptConfig');
                 localStorage.removeItem('systemPromptPublicConfig');
@@ -2245,16 +2223,13 @@ IMPORTANT REMINDERS:
                     analysisHash: null
                 };
                 
+                // Reset state
                 state.currentQuestionIndex = 0;
                 state.answers = [];
-                state.config = {
-                    baseURL: 'https://api.openai.com/v1',
-                    model: 'gpt-4',
-                    apiKey: ''
-                };
                 
-                alert('All data cleared successfully.');
-                location.reload();
+                // Return to landing
+                document.getElementById('results').classList.add('hidden');
+                document.getElementById('landing').classList.remove('hidden');
             }
         }
 
