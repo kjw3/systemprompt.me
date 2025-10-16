@@ -33,31 +33,79 @@
             #results {
                 display: block !important;
                 max-width: 100% !important;
-                padding: 0 !important;
+                padding: 0.5in !important;
+                background: white !important;
             }
             
-            /* Hide buttons in print */
+            /* Hide buttons and interactive elements */
             button, .no-print {
                 display: none !important;
             }
             
-            /* Ensure results are visible */
+            /* Optimize cards for B&W printing */
             .result-card {
                 page-break-inside: avoid;
-                margin: 20px 0;
-                padding: 20px;
-                border-left: 4px solid #6366f1;
-                background: #f9fafb;
+                margin: 0.25in 0;
+                padding: 0.25in;
+                border-left: 3px solid #333 !important; /* Dark gray for B&W */
+                background: white !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
             }
             
-            /* Clean typography */
+            /* Clean typography for print */
             .prose {
-                color: #374151;
+                color: #000 !important;
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+            
+            h1 {
+                color: #000 !important;
+                font-size: 24pt;
+                margin-bottom: 0.25in;
+                page-break-after: avoid;
             }
             
             h2 {
-                color: #4338ca;
-                margin-bottom: 15px;
+                color: #000 !important;
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 0.15in;
+                page-break-after: avoid;
+            }
+            
+            h3 {
+                color: #000 !important;
+                font-size: 12pt;
+                font-weight: bold;
+            }
+            
+            /* Better list formatting for print */
+            .prose ul, .prose ol {
+                margin: 0.15in 0;
+                padding-left: 0.3in;
+            }
+            
+            .prose li {
+                margin-bottom: 0.1in;
+                line-height: 1.4;
+            }
+            
+            /* Ensure strong text is visible */
+            strong {
+                font-weight: bold;
+                color: #000 !important;
+            }
+            
+            /* Page breaks */
+            .result-card {
+                page-break-inside: avoid;
+            }
+            
+            /* Subtitle for print */
+            #results p {
+                color: #333 !important;
             }
         }
         
@@ -137,22 +185,78 @@
         
         .result-card {
             border-left: 4px solid #667eea;
-            transition: transform 0.2s;
+            transition: all 0.2s ease;
         }
         
         .result-card:hover {
             transform: translateX(4px);
+            border-left-color: #764ba2;
         }
         
-        /* List item spacing */
+        /* Enhanced prose styling for better readability */
+        .prose {
+            line-height: 1.75;
+        }
+        
+        .prose h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .prose h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .prose p {
+            margin-bottom: 1.25rem;
+        }
+        
+        .prose p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* List item spacing with better hierarchy */
+        .prose ul,
+        .prose ol {
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+        
         .prose ol li,
         .prose ul li {
             margin-bottom: 1rem;
+            padding-left: 0.5rem;
         }
         
         .prose ol li:last-child,
         .prose ul li:last-child {
             margin-bottom: 0;
+        }
+        
+        .prose strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .result-card {
+                padding: 1.25rem !important;
+                margin-bottom: 1rem;
+            }
+            
+            .result-card h2 {
+                font-size: 1.5rem;
+            }
+            
+            .prose {
+                font-size: 0.9375rem;
+            }
         }
     </style>
 </head>
@@ -302,29 +406,29 @@
     </section>
 
     <!-- Results Section -->
-    <section id="results" class="hidden min-h-screen py-12 px-4 bg-gray-50">
-        <div class="max-w-4xl mx-auto">
-            <div class="text-center mb-12">
-                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+    <section id="results" class="hidden min-h-screen py-8 md:py-12 px-4 bg-gray-50">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-8 md:mb-12">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-3 md:mb-4">
                     Your System Prompt Analysis
                 </h1>
-                <p class="text-gray-600 text-lg">
+                <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
                     Here's what we discovered about your mental operating system
                 </p>
             </div>
 
-            <div id="results-content" class="space-y-6">
+            <div id="results-content" class="space-y-5 md:space-y-6">
                 <!-- Results will be populated here -->
             </div>
 
-            <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-                <button onclick="printResults()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
-                    🖨️ Print Analysis
+            <div class="mt-8 md:mt-12 flex flex-col sm:flex-row gap-3 md:gap-4 justify-center no-print">
+                <button onclick="printResults()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-md hover:shadow-lg">
+                    🖨️ Print / Save PDF
                 </button>
-                <button onclick="startOver()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition">
+                <button onclick="startOver()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md hover:shadow-lg">
                     🔄 Start Over
                 </button>
-                <button onclick="clearAllData()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
+                <button onclick="clearAllData()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-md hover:shadow-lg">
                     🗑️ Clear All Data
                 </button>
             </div>
@@ -1683,15 +1787,17 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                 });
             }
             
-            // Render each section
+            // Render each section with improved styling
             let html = '';
             sections.forEach(section => {
                 if (section.title) {
                     // Section with title - separate card
                     const contentHtml = marked.parse(section.content);
                     html += `
-                        <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4">${section.title}</h2>
+                        <div class="result-card bg-white rounded-xl shadow-md hover:shadow-lg p-5 md:p-8 border border-gray-100">
+                            <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                                ${section.title}
+                            </h2>
                             <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                                 ${contentHtml}
                             </div>
@@ -1701,7 +1807,7 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                     // Content without title (intro text)
                     const contentHtml = marked.parse(section.content);
                     html += `
-                        <div class="result-card bg-white rounded-xl shadow-lg p-6 md:p-8">
+                        <div class="result-card bg-white rounded-xl shadow-md hover:shadow-lg p-5 md:p-8 border border-gray-100">
                             <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                                 ${contentHtml}
                             </div>
