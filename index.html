@@ -494,7 +494,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
             <div class="spinner mx-auto mb-4"></div>
             <h3 class="text-xl font-semibold text-gray-800 mb-2">Optimizing for AI Platforms</h3>
-            <p class="text-gray-600">Creating ChatGPT and Claude-optimized versions...</p>
+            <p class="text-gray-600">Creating Quick, ChatGPT, and Claude-optimized versions...</p>
         </div>
     </div>
 
@@ -505,6 +505,23 @@
             <p class="text-gray-600 mb-6">We've optimized your analysis for different AI platforms. Select which version to copy:</p>
             
             <div class="space-y-4">
+                <!-- Quick Context Version -->
+                <div class="border-2 border-teal-200 rounded-xl p-4 hover:border-teal-400 transition cursor-pointer" onclick="copySelectedFormat('quick')">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h3 class="text-lg font-semibold text-teal-700">Quick Context</h3>
+                            <p class="text-sm text-gray-600">Ultra-short, 300-500 characters</p>
+                        </div>
+                        <button class="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition text-sm">
+                            Copy
+                        </button>
+                    </div>
+                    <div id="quick-preview" class="bg-gray-50 rounded p-3 text-xs text-gray-700 max-h-32 overflow-y-auto font-mono">
+                        Loading...
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Perfect for pasting at the top of any AI chat</p>
+                </div>
+                
                 <!-- ChatGPT Version -->
                 <div class="border-2 border-purple-200 rounded-xl p-4 hover:border-purple-400 transition cursor-pointer" onclick="copySelectedFormat('chatgpt')">
                     <div class="flex items-start justify-between mb-2">
@@ -1947,6 +1964,7 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
 
         // Store optimized versions globally with cache validation
         let optimizedVersions = {
+            quick: '',
             chatgpt: '',
             claude: '',
             analysisHash: null
@@ -1964,7 +1982,7 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             let analysis = data.analysis;
             
             // Check if we already have cached optimized versions for this analysis
-            if (optimizedVersions.chatgpt && optimizedVersions.claude && optimizedVersions.analysisHash === hashString(analysis)) {
+            if (optimizedVersions.quick && optimizedVersions.chatgpt && optimizedVersions.claude && optimizedVersions.analysisHash === hashString(analysis)) {
                 // Use cached versions
                 showFormatSelectionModal();
                 return;
@@ -1978,6 +1996,7 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                 const optimized = await optimizeForAIPlatforms(analysis);
                 
                 // Store the optimized versions with hash for cache validation
+                optimizedVersions.quick = optimized.quick;
                 optimizedVersions.chatgpt = optimized.chatgpt;
                 optimizedVersions.claude = optimized.claude;
                 optimizedVersions.analysisHash = hashString(analysis);
@@ -2013,16 +2032,23 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
                 throw new Error(`Rate limit exceeded. Please wait ${rateCheck.resetIn} seconds.`);
             }
             
-            const optimizationPrompt = `You are an expert at condensing psychological analyses for use in AI assistant custom instructions. I need you to create TWO optimized versions of this analysis.
+            const optimizationPrompt = `You are an expert at condensing psychological analyses for use in AI assistant custom instructions. I need you to create THREE optimized versions of this analysis.
 
-VERSION 1 - CHATGPT CUSTOM INSTRUCTIONS:
+VERSION 1 - QUICK CONTEXT:
+- CRITICAL: MUST be 300-500 characters (ultra-short for pasting at top of any chat)
+- One paragraph summarizing: core identity, 2 key patterns/blockers, 1 strength, brief directive
+- Designed to paste at the start of ANY AI conversation for instant personalization
+- Plain, conversational language: "I'm [identity]. Key patterns: [patterns]. Help me [directive]."
+- DO NOT include character counts or meta-information in the output
+
+VERSION 2 - CHATGPT CUSTOM INSTRUCTIONS:
 - CRITICAL: MUST be under 1500 characters (aim for 1300-1400 to be safe)
 - Ultra-condensed while preserving core essence
 - Include: brief system prompt (2-3 sentences), top 2-3 blockers, top 2 biases, directive for AI
 - Clear, actionable format
 - DO NOT include character counts or meta-information in the output
 
-VERSION 2 - CLAUDE/FULL VERSION:
+VERSION 3 - CLAUDE/FULL VERSION:
 - CRITICAL: MUST be 3500-4500 characters (this is longer than you think - be detailed!)
 - FORMAT AS INSTRUCTIONS FOR THE AI, not as a report about the user
 - Start with: "When interacting with this user..." or "Context for personalized assistance:"
@@ -2033,13 +2059,14 @@ VERSION 2 - CLAUDE/FULL VERSION:
 - Use plain text (no markdown: no **, no *, no #)
 - DO NOT include character counts or meta-information in the output
 
-FORMATTING REQUIREMENTS (BOTH VERSIONS):
-1. Start each version with ONLY the marker: "=== CHATGPT VERSION ===" and "=== CLAUDE VERSION ==="
+FORMATTING REQUIREMENTS (ALL VERSIONS):
+1. Start each version with ONLY the marker: "=== QUICK CONTEXT ===", "=== CHATGPT VERSION ===", and "=== CLAUDE VERSION ==="
 2. Use plain text (no markdown: no **, no *, no #)
 3. Remove ALL question references like (Q1, Q7)
-4. Use clear section headers like "System prompt:", "Key blockers:", etc.
-5. Number items as 1), 2), 3) for clarity
-6. DO NOT ADD CHARACTER COUNTS - the text should end naturally without meta-commentary
+4. For ChatGPT/Claude: Use clear section headers like "System prompt:", "Key blockers:", etc.
+5. For ChatGPT/Claude: Number items as 1), 2), 3) for clarity
+6. For Quick Context: Single flowing paragraph, conversational tone
+7. DO NOT ADD CHARACTER COUNTS - the text should end naturally without meta-commentary
 
 HERE IS THE FULL ANALYSIS TO OPTIMIZE:
 
@@ -2059,6 +2086,7 @@ KEY PATTERNS TO ACCOUNT FOR:
 [Continue for all blockers, biases, strengths with specific HOW-TO guidance for the AI...]"
 
 IMPORTANT REMINDERS:
+- Quick Context: 300-500 chars, single paragraph, conversational ("I'm... Key patterns:... Help me...")
 - ChatGPT version: under 1500 chars, condensed, actionable
 - Claude version: 3500-4500 chars, WRITTEN AS INSTRUCTIONS FOR THE AI (not a report about the user)
 - NO character counts in the output
@@ -2101,7 +2129,8 @@ IMPORTANT REMINDERS:
             const result = await response.json();
             const optimizedText = result.choices[0].message.content;
             
-            // Parse the two versions
+            // Parse the three versions
+            const quickMatch = optimizedText.match(/=== QUICK CONTEXT ===\s*([\s\S]*?)(?:=== CHATGPT VERSION ===|$)/i);
             const chatgptMatch = optimizedText.match(/=== CHATGPT VERSION ===\s*([\s\S]*?)(?:=== CLAUDE VERSION ===|$)/i);
             const claudeMatch = optimizedText.match(/=== CLAUDE VERSION ===\s*([\s\S]*?)$/i);
             
@@ -2116,6 +2145,7 @@ IMPORTANT REMINDERS:
             };
             
             return {
+                quick: quickMatch ? cleanVersion(quickMatch[1]) : cleanVersion(optimizedText.substring(0, 500)),
                 chatgpt: chatgptMatch ? cleanVersion(chatgptMatch[1]) : cleanVersion(optimizedText.substring(0, 1500)),
                 claude: claudeMatch ? cleanVersion(claudeMatch[1]) : cleanVersion(optimizedText)
             };
@@ -2123,6 +2153,7 @@ IMPORTANT REMINDERS:
         
         function showFormatSelectionModal() {
             // Update previews
+            document.getElementById('quick-preview').textContent = optimizedVersions.quick.substring(0, 150) + '...';
             document.getElementById('chatgpt-preview').textContent = optimizedVersions.chatgpt.substring(0, 200) + '...';
             document.getElementById('claude-preview').textContent = optimizedVersions.claude.substring(0, 200) + '...';
             
@@ -2184,6 +2215,7 @@ IMPORTANT REMINDERS:
                 
                 // Clear cached AI optimizations
                 optimizedVersions = {
+                    quick: '',
                     chatgpt: '',
                     claude: '',
                     analysisHash: null
@@ -2207,6 +2239,7 @@ IMPORTANT REMINDERS:
                 
                 // Clear cached AI optimizations
                 optimizedVersions = {
+                    quick: '',
                     chatgpt: '',
                     claude: '',
                     analysisHash: null
