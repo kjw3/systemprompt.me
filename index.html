@@ -224,6 +224,10 @@
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div id="progress-bar" class="progress-bar h-2 rounded-full gradient-bg" style="width: 10%"></div>
                     </div>
+                    <!-- Readiness Indicator -->
+                    <div id="readiness-indicator" class="mt-2 text-sm text-center hidden">
+                        <span id="readiness-message"></span>
+                    </div>
                 </div>
 
                 <!-- Question Card -->
@@ -267,13 +271,22 @@
                         ← Previous
                     </button>
                     <div class="flex-1"></div>
-                    <button 
-                        id="next-btn"
-                        onclick="nextQuestion()"
-                        class="btn-primary text-white px-8 py-3 rounded-lg font-semibold"
-                    >
-                        Next →
-                    </button>
+                    <div class="flex gap-3 items-center">
+                        <button 
+                            id="analyze-early-btn"
+                            onclick="confirmEarlyAnalysis()"
+                            class="hidden bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                        >
+                            ✓ Analyze Now
+                        </button>
+                        <button 
+                            id="next-btn"
+                            onclick="nextQuestion()"
+                            class="btn-primary text-white px-8 py-3 rounded-lg font-semibold"
+                        >
+                            Next →
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -623,57 +636,80 @@
             }
         };
 
-        // Questions
+        // Questions - Ordered by insight value (Tier 1 = most critical first)
         const questions = [
+            // TIER 1: Critical for pattern detection
             {
                 id: 1,
                 text: "When you face a major setback or failure, what's the first thing you tell yourself?",
-                category: "self-talk"
-            },
-            {
-                id: 2,
-                text: "Complete this sentence: I would be more successful if only I...",
-                category: "limitations"
-            },
-            {
-                id: 3,
-                text: "What achievement are you most proud of, and why do you think you succeeded there?",
-                category: "strengths"
-            },
-            {
-                id: 4,
-                text: "When someone criticizes you, how do you typically interpret their feedback?",
-                category: "reactions"
+                category: "self-talk",
+                placeholder: "I tell myself... (For example: 'I should have seen this coming' or 'This is just a temporary setback')",
+                tier: 1
             },
             {
                 id: 5,
                 text: "What recurring thought or worry keeps coming back to you, even when you try to ignore it?",
-                category: "patterns"
-            },
-            {
-                id: 6,
-                text: "If you could change one thing about how you approach challenges, what would it be and why?",
-                category: "self-awareness"
-            },
-            {
-                id: 7,
-                text: "What opportunity did you pass on that you still think about? What stopped you?",
-                category: "blockers"
-            },
-            {
-                id: 8,
-                text: "How do you decide what deserves your time and energy? What's your priority framework?",
-                category: "values"
-            },
-            {
-                id: 9,
-                text: "When you compare yourself to others, what thoughts typically arise?",
-                category: "biases"
+                category: "patterns",
+                placeholder: "The thought that keeps returning is... (When does it surface? What triggers it?)",
+                tier: 1
             },
             {
                 id: 10,
                 text: "What belief about yourself would you want to be true, but you're not sure you actually believe it?",
-                category: "beliefs"
+                category: "beliefs",
+                placeholder: "I want to believe that I... but honestly, I'm not sure because...",
+                tier: 1
+            },
+            {
+                id: 7,
+                text: "What opportunity did you pass on that you still think about? What stopped you?",
+                category: "blockers",
+                placeholder: "I passed on... and what stopped me was... (Looking back, I feel...)",
+                tier: 1
+            },
+            {
+                id: 4,
+                text: "When someone criticizes you, how do you typically interpret their feedback?",
+                category: "reactions",
+                placeholder: "When I receive criticism, I usually think... (My first reaction is typically...)",
+                tier: 1
+            },
+            // TIER 2: High value for comprehensive analysis
+            {
+                id: 8,
+                text: "How do you decide what deserves your time and energy? What's your priority framework?",
+                category: "values",
+                placeholder: "I prioritize things by... (What gets my time? What do I tend to put off?)",
+                tier: 2
+            },
+            {
+                id: 6,
+                text: "If you could change one thing about how you approach challenges, what would it be and why?",
+                category: "self-awareness",
+                placeholder: "I would change... because... (What's holding me back from making this change?)",
+                tier: 2
+            },
+            {
+                id: 3,
+                text: "What achievement are you most proud of, and why do you think you succeeded there?",
+                category: "strengths",
+                placeholder: "I'm most proud of... I succeeded because... (What did I do differently?)",
+                tier: 2
+            },
+            // TIER 3: Supplemental for depth
+            {
+                id: 2,
+                text: "Complete this sentence: I would be more successful if only I...",
+                category: "limitations",
+                placeholder: "...had more confidence / ...stopped overthinking / ...took more risks / ...",
+                tier: 3
+            },
+            {
+                id: 9,
+                text: "When you compare yourself to others, what thoughts typically arise?",
+                category: "biases",
+                placeholder: "When I compare myself, I think... (This makes me feel...)",
+                tier: 3
             }
         ];
 
@@ -1053,6 +1089,46 @@ Do you understand the risks and want to continue?`;
             }
         }
 
+        // Helper: Count answered questions
+        function getAnsweredCount() {
+            return state.answers.filter(answer => answer && answer.trim() !== '').length;
+        }
+        
+        // Helper: Check if ready to analyze (minimum 5 questions)
+        function canAnalyze() {
+            return getAnsweredCount() >= 5;
+        }
+        
+        // Helper: Get readiness message
+        function getReadinessMessage() {
+            const answered = getAnsweredCount();
+            const total = questions.length;
+            
+            if (answered < 5) {
+                return { message: '', className: '' };
+            } else if (answered === 5) {
+                return { 
+                    message: '✅ Ready to analyze! (5 more questions for deeper insights)',
+                    className: 'text-green-600 font-medium'
+                };
+            } else if (answered < 8) {
+                return { 
+                    message: `✨ Great coverage! (${total - answered} more for comprehensive analysis)`,
+                    className: 'text-blue-600 font-medium'
+                };
+            } else if (answered < 10) {
+                return { 
+                    message: `🌟 Excellent! (${total - answered} remaining for full analysis)`,
+                    className: 'text-purple-600 font-medium'
+                };
+            } else {
+                return { 
+                    message: '🎯 Perfect! All questions answered for maximum insight',
+                    className: 'text-green-600 font-semibold'
+                };
+            }
+        }
+
         function buildQuestionNav() {
             const navList = document.getElementById('question-list');
             navList.innerHTML = '';
@@ -1115,9 +1191,13 @@ Do you understand the risks and want to continue?`;
             document.getElementById('progress-bar').style.width = progress + '%';
             document.getElementById('question-text').textContent = question.text;
             
+            // Set question-specific placeholder (Layer 2: Contextual Guidance)
+            const textarea = document.getElementById('answer-input');
+            textarea.placeholder = question.placeholder || "Share a specific example... What did you feel? What did you tell yourself?";
+            
             // Load saved answer if exists
             const savedAnswer = state.answers[state.currentQuestionIndex];
-            document.getElementById('answer-input').value = savedAnswer || '';
+            textarea.value = savedAnswer || '';
 
             // Update button visibility
             if (state.currentQuestionIndex > 0) {
@@ -1126,8 +1206,33 @@ Do you understand the risks and want to continue?`;
                 document.getElementById('prev-btn').classList.add('hidden');
             }
 
-            // Update next button text
+            // Update readiness indicator
+            const readiness = getReadinessMessage();
+            const readinessIndicator = document.getElementById('readiness-indicator');
+            const readinessMessage = document.getElementById('readiness-message');
+            
+            if (readiness.message) {
+                readinessIndicator.classList.remove('hidden');
+                readinessMessage.textContent = readiness.message;
+                readinessMessage.className = readiness.className;
+            } else {
+                readinessIndicator.classList.add('hidden');
+            }
+
+            // Update button visibility and text
             const nextBtn = document.getElementById('next-btn');
+            const analyzeEarlyBtn = document.getElementById('analyze-early-btn');
+            const answeredCount = getAnsweredCount();
+            const ready = canAnalyze();
+            
+            // Show "Analyze Now" button if ready and not on last question
+            if (ready && state.currentQuestionIndex < totalQuestions - 1) {
+                analyzeEarlyBtn.classList.remove('hidden');
+            } else {
+                analyzeEarlyBtn.classList.add('hidden');
+            }
+            
+            // Update "Next" button text
             if (state.currentQuestionIndex === totalQuestions - 1) {
                 nextBtn.textContent = 'Analyze →';
             } else {
@@ -1138,7 +1243,6 @@ Do you understand the risks and want to continue?`;
             buildQuestionNav();
 
             // Setup character counter (Layer 3: Smart Feedback)
-            const textarea = document.getElementById('answer-input');
             const counter = document.getElementById('char-counter');
             
             function updateCharCounter() {
@@ -1181,6 +1285,21 @@ Do you understand the risks and want to continue?`;
             textarea.focus();
         }
 
+        function confirmEarlyAnalysis() {
+            const answeredCount = getAnsweredCount();
+            const remainingCount = questions.length - answeredCount;
+            
+            // Gentle encouragement without being pushy
+            const message = answeredCount === 5
+                ? `You've answered ${answeredCount} questions - enough for a good analysis!\n\nAnswering ${remainingCount} more questions would provide deeper insights and more comprehensive patterns.\n\nReady to analyze now, or continue with more questions?`
+                : `You've answered ${answeredCount} of ${questions.length} questions - great coverage!\n\n${remainingCount} more questions would give even richer insights.\n\nReady to analyze now?`;
+            
+            const proceed = confirm(message);
+            if (proceed) {
+                analyzeResponses();
+            }
+        }
+
         function nextQuestion() {
             const rawAnswer = document.getElementById('answer-input').value.trim();
             
@@ -1212,7 +1331,12 @@ Do you understand the risks and want to continue?`;
                 state.currentQuestionIndex++;
                 displayQuestion();
             } else {
-                analyzeResponses();
+                // On last question - check if we have minimum answers
+                if (canAnalyze()) {
+                    analyzeResponses();
+                } else {
+                    alert(`Please answer at least 5 questions before analyzing.\n\nYou've answered ${getAnsweredCount()} so far.`);
+                }
             }
         }
 
@@ -1475,18 +1599,24 @@ Do you understand the risks and want to continue?`;
             
             let prompt = `I need you to analyze a person's responses to discover their internal "system prompt" - the underlying beliefs, biases, and mental blockers that shape their worldview and decisions.
 
-Below are their responses to a series of introspective questions:
+Below are their responses to a series of introspective questions (they answered ${getAnsweredCount()} out of ${questions.length} questions):
 
 `;
 
             let totalLength = 0;
+            let answeredQuestions = 0;
             questions.forEach((q, i) => {
                 // Re-sanitize answers for extra safety
                 const sanitizedAnswer = InputSanitizer.sanitizeAnswer(state.answers[i] || '');
-                totalLength += sanitizedAnswer.length;
                 
-                prompt += `**Question ${i + 1}:** ${q.text}\n`;
-                prompt += `**Response:** ${sanitizedAnswer}\n\n`;
+                // Only include answered questions
+                if (sanitizedAnswer && sanitizedAnswer.trim().length > 0) {
+                    totalLength += sanitizedAnswer.length;
+                    answeredQuestions++;
+                    
+                    prompt += `**Question ${answeredQuestions}:** ${q.text}\n`;
+                    prompt += `**Response:** ${sanitizedAnswer}\n\n`;
+                }
             });
             
             // Check total length
