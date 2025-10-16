@@ -152,6 +152,58 @@
                 orphans: 3;
                 widows: 3;
             }
+            
+            /* AI-Optimized Versions Print Styles */
+            #ai-versions-print {
+                display: block !important;
+                margin-top: 0.25in;
+            }
+            
+            .page-break-before {
+                page-break-before: always;
+                padding-top: 0.2in;
+            }
+            
+            #ai-versions-print h2 {
+                font-size: 14pt;
+                margin-top: 0.15in;
+                margin-bottom: 0.15in;
+                border-bottom: 2px solid #000 !important;
+                padding-bottom: 0.05in;
+            }
+            
+            #ai-versions-print h3 {
+                font-size: 10pt;
+                margin-top: 0.12in;
+                margin-bottom: 0.05in;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            
+            #ai-versions-print p {
+                font-size: 8pt;
+                margin-bottom: 0.05in;
+                font-style: italic;
+                color: #666 !important;
+            }
+            
+            #ai-versions-print .bg-gray-50 {
+                background: #f8f8f8 !important;
+                border: 1px solid #ccc !important;
+                border-radius: 3pt;
+                padding: 0.08in;
+                font-size: 8.5pt;
+                line-height: 1.35;
+                font-family: 'Courier New', monospace;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                page-break-inside: avoid;
+            }
+            
+            #ai-versions-print .mb-6 {
+                margin-bottom: 0.15in;
+                page-break-inside: avoid;
+            }
         }
         
         * {
@@ -462,6 +514,11 @@
 
             <div id="results-content" class="space-y-5 md:space-y-6">
                 <!-- Results will be populated here -->
+            </div>
+
+            <!-- AI-Optimized Versions for Print -->
+            <div id="ai-versions-print" class="hidden print:block mt-8 space-y-4">
+                <!-- Will be populated when AI optimization is run -->
             </div>
 
             <div class="mt-8 md:mt-12 flex flex-col sm:flex-row gap-3 md:gap-4 justify-center no-print">
@@ -2225,8 +2282,59 @@ IMPORTANT REMINDERS:
             document.getElementById('chatgpt-preview').textContent = optimizedVersions.chatgpt.substring(0, 200) + '...';
             document.getElementById('claude-preview').textContent = optimizedVersions.claude.substring(0, 200) + '...';
             
+            // Update print section with AI-optimized versions
+            updatePrintVersions();
+            
             // Show modal
             document.getElementById('format-selection-modal').classList.remove('hidden');
+        }
+        
+        function updatePrintVersions() {
+            const printContainer = document.getElementById('ai-versions-print');
+            
+            // Only populate if we have optimized versions
+            if (optimizedVersions.quick || optimizedVersions.chatgpt || optimizedVersions.claude) {
+                let html = '<div class="page-break-before"><h2 class="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-gray-300">AI-OPTIMIZED VERSIONS</h2>';
+                
+                if (optimizedVersions.quick) {
+                    html += `
+                        <div class="mb-6">
+                            <h3 class="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">Quick Context (300-500 chars)</h3>
+                            <p class="text-xs text-gray-600 mb-2 italic">Paste at the top of any AI chat for instant personalization</p>
+                            <div class="bg-gray-50 border border-gray-300 rounded p-3 text-sm whitespace-pre-wrap font-mono">${escapeHtml(optimizedVersions.quick)}</div>
+                        </div>
+                    `;
+                }
+                
+                if (optimizedVersions.chatgpt) {
+                    html += `
+                        <div class="mb-6">
+                            <h3 class="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">ChatGPT Custom Instructions (Under 1500 chars)</h3>
+                            <p class="text-xs text-gray-600 mb-2 italic">Settings → Personalization → Custom Instructions</p>
+                            <div class="bg-gray-50 border border-gray-300 rounded p-3 text-sm whitespace-pre-wrap font-mono">${escapeHtml(optimizedVersions.chatgpt)}</div>
+                        </div>
+                    `;
+                }
+                
+                if (optimizedVersions.claude) {
+                    html += `
+                        <div class="mb-6">
+                            <h3 class="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">Claude/Full Version (3500-4500 chars)</h3>
+                            <p class="text-xs text-gray-600 mb-2 italic">Claude Projects → Add Custom Instructions</p>
+                            <div class="bg-gray-50 border border-gray-300 rounded p-3 text-sm whitespace-pre-wrap font-mono">${escapeHtml(optimizedVersions.claude)}</div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                printContainer.innerHTML = html;
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         function closeFormatModal() {
