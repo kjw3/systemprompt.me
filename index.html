@@ -50,8 +50,8 @@
             /* Optimize cards for B&W printing - no borders, minimal spacing */
             .result-card {
                 page-break-inside: avoid;
-                margin: 0.1in 0;
-                padding: 0;
+                margin: 0 !important;
+                padding: 0 !important;
                 border: none !important;
                 background: white !important;
                 box-shadow: none !important;
@@ -82,13 +82,18 @@
                 color: #000 !important;
                 font-size: 13pt;
                 font-weight: bold;
-                margin-top: 0.15in;
-                margin-bottom: 0.08in;
+                margin-top: 0.12in;
+                margin-bottom: 0.06in;
                 padding-bottom: 0 !important;
                 page-break-after: avoid;
                 border-bottom: none !important;
                 text-transform: uppercase;
                 letter-spacing: 0.02em;
+            }
+            
+            /* No top margin on first section header */
+            h2:first-of-type {
+                margin-top: 0 !important;
             }
             
             h3 {
@@ -99,19 +104,23 @@
                 margin-bottom: 0.05in;
             }
             
-            /* Tighter list formatting for print */
+            /* Minimal list formatting for print - no indentation */
             .prose ul, .prose ol {
-                margin: 0.08in 0;
-                padding-left: 0.25in;
+                margin: 0.06in 0;
+                padding-left: 0 !important;
+                list-style-position: outside;
             }
             
             .prose li {
                 margin-bottom: 0.06in;
+                margin-left: 0 !important;
+                padding-left: 0 !important;
                 line-height: 1.35;
             }
             
             .prose p {
-                margin-bottom: 0.08in;
+                margin-bottom: 0.06in;
+                margin-top: 0;
             }
             
             .prose p:last-child {
@@ -131,9 +140,10 @@
                 widows: 3;
             }
             
-            /* Remove top margin from first card */
-            .result-card:first-child {
-                margin-top: 0 !important;
+            /* Remove container spacing */
+            #results-content {
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             /* Additional typography refinements */
