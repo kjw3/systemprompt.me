@@ -2024,9 +2024,13 @@ VERSION 1 - CHATGPT CUSTOM INSTRUCTIONS:
 
 VERSION 2 - CLAUDE/FULL VERSION:
 - CRITICAL: MUST be 3500-4500 characters (this is longer than you think - be detailed!)
-- Include ALL of: full system prompt (detailed paragraph), ALL 4 blockers with explanations, ALL 4 biases with context, ALL 4 strengths with examples, ALL 5 growth opportunities with specific tactics, final encouragement note
-- Each section should be substantial with concrete details
-- Use numbered lists for clarity
+- FORMAT AS INSTRUCTIONS FOR THE AI, not as a report about the user
+- Start with: "When interacting with this user..." or "Context for personalized assistance:"
+- Frame everything as directives: "Be aware that they...", "Account for their tendency to...", "Build on their strength of...", "When they share setbacks, remember they..."
+- Include ALL of: their mental operating system, ALL 4 blockers (how you should respond), ALL 4 biases (how to challenge them), ALL 4 strengths (how to leverage), ALL 5 growth tactics (how to encourage), final directive
+- Write in second-person addressing the AI: "You should...", "Frame advice by...", "Avoid reinforcing their..."
+- Each section should give the AI actionable guidance on HOW to interact
+- Use plain text (no markdown: no **, no *, no #)
 - DO NOT include character counts or meta-information in the output
 
 FORMATTING REQUIREMENTS (BOTH VERSIONS):
@@ -2041,10 +2045,24 @@ HERE IS THE FULL ANALYSIS TO OPTIMIZE:
 
 ${analysis}
 
+EXAMPLE FORMAT FOR CLAUDE VERSION:
+"CONTEXT FOR PERSONALIZED ASSISTANCE:
+
+When interacting with this user, understand that they are responsibility-driven and prioritize family/legacy above personal achievement. Their mental operating system [detailed explanation].
+
+KEY PATTERNS TO ACCOUNT FOR:
+
+1) Emotional suppression: When they discuss challenges, be aware they may intellectualize feelings rather than expressing them. Gently encourage emotional articulation by asking 'How did that make you feel?' rather than only problem-solving.
+
+2) Regret-driven paralysis: They ruminate on past decisions. Avoid reinforcing this by challenging 'what if' thinking. Frame past choices as valuable learning experiences. When they express regret, redirect to present-moment actions.
+
+[Continue for all blockers, biases, strengths with specific HOW-TO guidance for the AI...]"
+
 IMPORTANT REMINDERS:
 - ChatGPT version: under 1500 chars, condensed, actionable
-- Claude version: 3500-4500 chars, detailed, ALL sections included with substantial content
+- Claude version: 3500-4500 chars, WRITTEN AS INSTRUCTIONS FOR THE AI (not a report about the user)
 - NO character counts in the output
+- NO markdown formatting (no **, no *, no #)
 - Start each with only the === marker`;
 
             const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
