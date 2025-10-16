@@ -484,10 +484,67 @@
             
             <!-- Copy confirmation toast -->
             <div id="copy-toast" class="hidden fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in">
-                ✓ Copied to clipboard! Paste into ChatGPT, Claude, or Gemini
+                ✓ Copied to clipboard! Ready to paste into your AI assistant
             </div>
         </div>
     </section>
+
+    <!-- AI Optimization Loading Modal -->
+    <div id="ai-optimize-loading" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Optimizing for AI Platforms</h3>
+            <p class="text-gray-600">Creating ChatGPT and Claude-optimized versions...</p>
+        </div>
+    </div>
+
+    <!-- Format Selection Modal -->
+    <div id="format-selection-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Choose Your Format</h2>
+            <p class="text-gray-600 mb-6">We've optimized your analysis for different AI platforms. Select which version to copy:</p>
+            
+            <div class="space-y-4">
+                <!-- ChatGPT Version -->
+                <div class="border-2 border-purple-200 rounded-xl p-4 hover:border-purple-400 transition cursor-pointer" onclick="copySelectedFormat('chatgpt')">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h3 class="text-lg font-semibold text-purple-700">ChatGPT Custom Instructions</h3>
+                            <p class="text-sm text-gray-600">Ultra-condensed, under 1500 characters</p>
+                        </div>
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition text-sm">
+                            Copy
+                        </button>
+                    </div>
+                    <div id="chatgpt-preview" class="bg-gray-50 rounded p-3 text-xs text-gray-700 max-h-32 overflow-y-auto font-mono">
+                        Loading...
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Perfect for ChatGPT's 1500 character limit</p>
+                </div>
+                
+                <!-- Claude/Full Version -->
+                <div class="border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 transition cursor-pointer" onclick="copySelectedFormat('claude')">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-700">Claude / Full Version</h3>
+                            <p class="text-sm text-gray-600">Detailed, ~3000-5000 characters</p>
+                        </div>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm">
+                            Copy
+                        </button>
+                    </div>
+                    <div id="claude-preview" class="bg-gray-50 rounded p-3 text-xs text-gray-700 max-h-32 overflow-y-auto font-mono">
+                        Loading...
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Ideal for Claude Projects, Gemini, or any AI chat</p>
+                </div>
+            </div>
+            
+            <button onclick="closeFormatModal()" class="mt-6 w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
 
     <!-- Config Modal -->
     <div id="config-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center px-4 z-50">
@@ -1888,7 +1945,13 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             }
         }
 
-        // Copy for AI Chat - optimized format for AI assistants
+        // Store optimized versions globally
+        let optimizedVersions = {
+            chatgpt: '',
+            claude: ''
+        };
+
+        // Copy for AI Chat - AI-powered optimization
         async function copyForAI() {
             const results = localStorage.getItem('systemPromptResults');
             if (!results) {
@@ -1899,108 +1962,149 @@ IMPORTANT: Use ONLY the section headers listed above. Do not add "Closing Note:"
             const data = JSON.parse(results);
             let analysis = data.analysis;
             
-            // Parse sections
-            const sections = {};
-            const parts = analysis.split(/^## /gm);
+            // Show loading modal
+            document.getElementById('ai-optimize-loading').classList.remove('hidden');
             
-            for (let i = 1; i < parts.length; i++) {
-                const lines = parts[i].split('\n');
-                const title = lines[0].trim();
-                const content = lines.slice(1).join('\n').trim();
-                sections[title] = content;
+            try {
+                // Call API to optimize the analysis
+                const optimized = await optimizeForAIPlatforms(analysis);
+                
+                // Store the optimized versions
+                optimizedVersions.chatgpt = optimized.chatgpt;
+                optimizedVersions.claude = optimized.claude;
+                
+                // Hide loading modal
+                document.getElementById('ai-optimize-loading').classList.add('hidden');
+                
+                // Show format selection modal with previews
+                showFormatSelectionModal();
+                
+            } catch (error) {
+                document.getElementById('ai-optimize-loading').classList.add('hidden');
+                console.error('Optimization error:', error);
+                alert('Failed to optimize analysis. Please try again or check your connection.');
+            }
+        }
+        
+        async function optimizeForAIPlatforms(analysis) {
+            // Rate limiting check
+            const rateCheck = apiRateLimiter.check();
+            if (!rateCheck.allowed) {
+                throw new Error(`Rate limit exceeded. Please wait ${rateCheck.resetIn} seconds.`);
             }
             
-            // Helper function to strip markdown and clean text
-            function cleanText(text) {
-                return text
-                    .replace(/\*\*/g, '')  // Remove bold
-                    .replace(/\*/g, '')    // Remove italics
-                    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')  // Remove links
-                    .replace(/\(Q\d+(?:,\s*Q\d+)*\)/g, '')  // Remove question references like (Q1, Q7)
-                    .replace(/\n{3,}/g, '\n\n')  // Max 2 newlines
-                    .trim();
+            const optimizationPrompt = `You are an expert at condensing psychological analyses for use in AI assistant custom instructions. I need you to create TWO optimized versions of this analysis:
+
+VERSION 1 - CHATGPT CUSTOM INSTRUCTIONS (CRITICAL: MUST BE UNDER 1500 CHARACTERS):
+- Ultra-condensed while preserving core essence
+- Include: brief system prompt, top 2-3 blockers, top 2 biases
+- Clear, directive format for AI to understand user
+- Count characters carefully and stay well under 1500
+
+VERSION 2 - CLAUDE/FULL VERSION (TARGET: 3000-4000 CHARACTERS):
+- More detailed but still concise
+- Include: system prompt, key blockers, biases, strengths, growth areas
+- Well-formatted for Claude Projects or any AI chat
+- Preserve more nuance and specifics
+
+CRITICAL REQUIREMENTS:
+1. Start each version with a clear marker: "=== CHATGPT VERSION ===" and "=== CLAUDE VERSION ==="
+2. Focus on actionable insights for the AI to understand how to interact
+3. Remove markdown formatting (use plain text)
+4. Remove question references like (Q1, Q7)
+5. Be specific and concrete, not generic
+
+HERE IS THE FULL ANALYSIS TO OPTIMIZE:
+
+${analysis}
+
+Remember: ChatGPT version MUST be under 1500 characters! Claude version should be 3000-4000 characters. Start each with the clear markers.`;
+
+            const isUsingWorker = state.config.baseURL.includes('systemprompt.me/api');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (!isUsingWorker && state.config.apiKey) {
+                headers['Authorization'] = `Bearer ${state.config.apiKey}`;
             }
-            
-            // Build AI-optimized text
-            let aiText = `PERSONAL CONTEXT FOR AI INTERACTIONS\n`;
-            aiText += `${'='.repeat(50)}\n\n`;
-            aiText += `I've completed a psychological analysis to help you understand how I think and communicate. Use these insights to provide more personalized, relevant guidance.\n\n`;
-            
-            // System Prompt (core)
-            if (sections['YOUR SYSTEM PROMPT']) {
-                aiText += `MY MENTAL OPERATING SYSTEM:\n`;
-                aiText += cleanText(sections['YOUR SYSTEM PROMPT']) + '\n\n';
+
+            const response = await fetch(`${state.config.baseURL}/chat/completions`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    model: state.config.model,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are an expert at condensing psychological analyses into actionable formats for AI assistants. You follow character limits precisely.'
+                        },
+                        {
+                            role: 'user',
+                            content: optimizationPrompt
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 3000,
+                    stream: false
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
             }
+
+            const result = await response.json();
+            const optimizedText = result.choices[0].message.content;
             
-            // Blockers
-            if (sections['IDENTIFIED BLOCKERS']) {
-                aiText += `KEY CHALLENGES TO BE AWARE OF:\n`;
-                const blockers = cleanText(sections['IDENTIFIED BLOCKERS']);
-                // Convert to simple list
-                const blockerLines = blockers.split('\n').filter(line => line.trim());
-                blockerLines.forEach(line => {
-                    const cleaned = line.replace(/^[-•*]\s*/, '').trim();
-                    if (cleaned) aiText += `• ${cleaned}\n`;
-                });
-                aiText += '\n';
+            // Parse the two versions
+            const chatgptMatch = optimizedText.match(/=== CHATGPT VERSION ===\s*([\s\S]*?)(?:=== CLAUDE VERSION ===|$)/i);
+            const claudeMatch = optimizedText.match(/=== CLAUDE VERSION ===\s*([\s\S]*?)$/i);
+            
+            return {
+                chatgpt: chatgptMatch ? chatgptMatch[1].trim() : optimizedText.substring(0, 1500),
+                claude: claudeMatch ? claudeMatch[1].trim() : optimizedText
+            };
+        }
+        
+        function showFormatSelectionModal() {
+            // Update previews
+            document.getElementById('chatgpt-preview').textContent = optimizedVersions.chatgpt.substring(0, 200) + '...';
+            document.getElementById('claude-preview').textContent = optimizedVersions.claude.substring(0, 200) + '...';
+            
+            // Show modal
+            document.getElementById('format-selection-modal').classList.remove('hidden');
+        }
+        
+        function closeFormatModal() {
+            document.getElementById('format-selection-modal').classList.add('hidden');
+        }
+        
+        async function copySelectedFormat(format) {
+            const textToCopy = optimizedVersions[format];
+            
+            if (!textToCopy) {
+                alert('Format not available. Please try again.');
+                return;
             }
-            
-            // Biases
-            if (sections['COGNITIVE BIASES']) {
-                aiText += `COGNITIVE PATTERNS:\n`;
-                const biases = cleanText(sections['COGNITIVE BIASES']);
-                const biasLines = biases.split('\n').filter(line => line.trim());
-                biasLines.forEach(line => {
-                    const cleaned = line.replace(/^[-•*]\s*/, '').trim();
-                    if (cleaned) aiText += `• ${cleaned}\n`;
-                });
-                aiText += '\n';
-            }
-            
-            // Strengths (optional but helpful)
-            if (sections['STRENGTHS & ASSETS']) {
-                aiText += `STRENGTHS TO BUILD ON:\n`;
-                const strengths = cleanText(sections['STRENGTHS & ASSETS']);
-                const strengthLines = strengths.split('\n').filter(line => line.trim());
-                strengthLines.forEach(line => {
-                    const cleaned = line.replace(/^[-•*]\s*/, '').trim();
-                    if (cleaned) aiText += `• ${cleaned}\n`;
-                });
-                aiText += '\n';
-            }
-            
-            // Growth opportunities (truncated to top 3)
-            if (sections['GROWTH OPPORTUNITIES']) {
-                aiText += `GROWTH AREAS I'M WORKING ON:\n`;
-                const growth = cleanText(sections['GROWTH OPPORTUNITIES']);
-                const growthLines = growth.split('\n').filter(line => line.trim()).slice(0, 5);
-                growthLines.forEach(line => {
-                    const cleaned = line.replace(/^[-•*\d.]\s*/, '').trim();
-                    if (cleaned) aiText += `• ${cleaned}\n`;
-                });
-                aiText += '\n';
-            }
-            
-            aiText += `${'='.repeat(50)}\n`;
-            aiText += `HOW TO USE THIS:\n`;
-            aiText += `When advising or conversing with me, consider these patterns. Frame suggestions in ways that account for my tendencies, challenge my biases constructively, and build on my strengths.`;
             
             // Copy to clipboard
             try {
-                await navigator.clipboard.writeText(aiText);
-                showCopyToast();
+                await navigator.clipboard.writeText(textToCopy);
             } catch (err) {
-                // Fallback for older browsers
+                // Fallback
                 const textarea = document.createElement('textarea');
-                textarea.value = aiText;
+                textarea.value = textToCopy;
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = '0';
                 document.body.appendChild(textarea);
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                showCopyToast();
             }
+            
+            // Close modal and show success
+            closeFormatModal();
+            showCopyToast();
         }
         
         function showCopyToast() {
